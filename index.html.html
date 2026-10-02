@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A0A16">
+<title>V3 OS</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230A0A16'/><text x='16' y='23' font-size='17' font-family='Georgia,serif' font-weight='bold' fill='%237C3AED' text-anchor='middle'>V3</text></svg>">
+<style>
+  :root{
+    --violet:#7C3AED; --cyan:#22D3EE; --dark:#0A0A16; --indigo:#231A52;
+    --paper:#FAFBFF; --line:#E4E4EF; --muted:#6B6880;
+    --red:#DC2626; --orange:#EA580C; --amber:#B26A00; --green:#059669;
+    --bg:#F4F5FA; --card:#FFFFFF; --text:#13131F;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0A0A16; --card:#15152A; --text:#ECECF5; --line:#2A2A45;
+      --paper:#15152A; --muted:#9A99B5;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0A0A16; --card:#15152A; --text:#ECECF5; --line:#2A2A45;
+    --paper:#15152A; --muted:#9A99B5;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; padding:0}
+  body{
+    background:var(--bg); color:var(--text);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .wrap{max-width:720px; margin:0 auto; padding:0 16px}
+  button{font:inherit; cursor:pointer; border:0; background:none; color:inherit}
+  input,select,textarea{
+    font:inherit; width:100%; padding:11px 12px; border:1px solid var(--line);
+    border-radius:10px; background:var(--card); color:var(--text);
+  }
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--violet); outline-offset:1px}
+  label{display:block; font-size:12px; font-weight:700; color:var(--muted);
+        text-transform:uppercase; letter-spacing:.04em; margin:0 0 5px}
+  .field{margin-bottom:12px}
+
+  /* ── topo ── */
+  header{
+    background:var(--dark); color:#fff; padding:14px 0 13px;
+    padding-top:calc(14px + env(safe-area-inset-top));
+    position:sticky; top:0; z-index:20;
+  }
+  .hrow{display:flex; align-items:center; justify-content:space-between; gap:12px}
+  .logo{font:700 19px/1 Georgia,serif; letter-spacing:-.01em}
+  .logo b{background:linear-gradient(90deg,var(--violet),var(--cyan));
+          -webkit-background-clip:text; background-clip:text; color:transparent}
+  .who{font-size:12px; color:#A9A8C4}
+  .tabs{display:flex; gap:6px; margin-top:12px}
+  .tab{
+    flex:1; padding:8px 10px; border-radius:9px; font-size:13px; font-weight:700;
+    color:#A9A8C4; background:#1C1C33; text-align:center;
+  }
+  .tab.on{background:linear-gradient(90deg,var(--violet),#5B49F5); color:#fff}
+
+  /* ── cartões ── */
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:15px; margin:12px 0}
+  .card h2{margin:0 0 12px; font:700 12px/1 system-ui; letter-spacing:.07em;
+           text-transform:uppercase; color:var(--violet)}
+
+  /* ── contador do dia ── */
+  .meta{background:linear-gradient(120deg,var(--indigo),#3B2A8C); color:#fff; border:0}
+  .meta .big{font:700 40px/1 Georgia,serif; letter-spacing:-.02em}
+  .meta .sub{font-size:13px; color:#C9C6F0; margin-top:4px}
+  .bar{height:7px; border-radius:4px; background:#ffffff22; margin-top:13px; overflow:hidden}
+  .bar i{display:block; height:100%; border-radius:4px;
+         background:linear-gradient(90deg,var(--cyan),#6EE7F9); transition:width .35s}
+  .mini{display:flex; gap:18px; margin-top:13px; font-size:12px; color:#C9C6F0}
+  .mini b{display:block; font:700 19px/1.2 system-ui; color:#fff}
+
+  /* ── lista de contas ── */
+  .conta{
+    display:flex; align-items:center; gap:11px; width:100%; text-align:left;
+    padding:12px 4px; border-bottom:1px solid var(--line);
+  }
+  .conta:last-child{border-bottom:0}
+  .conta:active{background:var(--bg)}
+  .dot{width:9px; height:9px; border-radius:50%; flex:none}
+  .cinfo{flex:1; min-width:0}
+  .cnome{font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .cmeta{font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .badge{font-size:10px; font-weight:800; letter-spacing:.05em; text-transform:uppercase;
+         padding:3px 7px; border-radius:20px; flex:none}
+  .atraso{font-size:11px; font-weight:800; color:var(--red); flex:none}
+
+  .vazio{text-align:center; color:var(--muted); padding:30px 10px; font-size:14px}
+
+  /* ── botões ── */
+  .btn{
+    display:block; width:100%; padding:13px; border-radius:11px; font-weight:700;
+    background:var(--violet); color:#fff; text-align:center;
+  }
+  .btn.ghost{background:transparent; border:1px solid var(--line); color:var(--text)}
+  .btn.dark{background:var(--dark); color:#fff}
+  .btn:active{transform:translateY(1px)}
+  .fab{
+    position:fixed; right:16px; bottom:calc(18px + env(safe-area-inset-bottom));
+    width:54px; height:54px; border-radius:50%; font-size:27px; color:#fff;
+    background:linear-gradient(135deg,var(--violet),#5B49F5);
+    box-shadow:0 7px 22px #7c3aed66; z-index:30; line-height:1;
+  }
+
+  /* ── folha inferior ── */
+  .sheet{
+    position:fixed; inset:0; z-index:50; background:#0A0A1699;
+    display:flex; align-items:flex-end; justify-content:center;
+  }
+  .sheet[hidden]{display:none}
+  .sheetbox{
+    background:var(--card); width:100%; max-width:720px;
+    border-radius:18px 18px 0 0; padding:18px 16px;
+    padding-bottom:calc(18px + env(safe-area-inset-bottom));
+    max-height:92vh; overflow:auto;
+  }
+  .grab{width:38px; height:4px; border-radius:3px; background:var(--line); margin:0 auto 14px}
+  .acts{display:grid; gap:8px; margin-top:12px}
+  .act{
+    display:flex; align-items:center; gap:11px; padding:15px 14px; border-radius:12px;
+    border:1px solid var(--line); font-weight:700; text-align:left; background:var(--paper);
+  }
+  .act:active{background:var(--bg)}
+  .act .ico{font-size:19px; width:24px; text-align:center; flex:none}
+  .act small{display:block; font-weight:500; font-size:11.5px; color:var(--muted); margin-top:1px}
+
+  /* ── painel ── */
+  table{width:100%; border-collapse:collapse; font-size:13.5px}
+  th{text-align:left; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;
+     color:var(--muted); padding:0 6px 8px; font-weight:800}
+  td{padding:9px 6px; border-top:1px solid var(--line)}
+  td.n,th.n{text-align:right; font-variant-numeric:tabular-nums}
+  .funil{display:grid; gap:7px}
+  .fl{display:flex; align-items:center; gap:10px; font-size:13.5px}
+  .fl .nome{width:120px; flex:none; color:var(--muted); font-size:12.5px}
+  .fl .track{flex:1; height:22px; background:var(--bg); border-radius:6px; overflow:hidden}
+  .fl .track i{display:block; height:100%; background:linear-gradient(90deg,var(--violet),var(--cyan))}
+  .fl .v{width:34px; text-align:right; font-weight:800; font-variant-numeric:tabular-nums}
+
+  .aviso{background:#FFF3DC; color:#7a4a00; border-radius:10px; padding:11px 12px;
+         font-size:13px; margin:10px 0}
+  .erro{background:#FEE2E2; color:#991B1B; border-radius:10px; padding:11px 12px;
+        font-size:13px; margin:10px 0}
+  :root[data-theme="dark"] .aviso{background:#3A2A08; color:#F3C878}
+  :root[data-theme="dark"] .erro{background:#3C1414; color:#FCA5A5}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .aviso{background:#3A2A08; color:#F3C878}
+    :root:not([data-theme="light"]) .erro{background:#3C1414; color:#FCA5A5}
+  }
+
+  .center{min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:20px}
+  .login{width:100%; max-width:360px}
+  .login .mark{text-align:center; margin-bottom:22px}
+  .login .mark .n{font:700 34px/1 Georgia,serif}
+  .login .mark .t{font-size:12.5px; color:var(--muted); margin-top:6px}
+  .muted{color:var(--muted); font-size:12.5px}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:9px}
+  .pend{position:fixed; left:16px; bottom:calc(20px + env(safe-area-inset-bottom));
+        background:var(--amber); color:#fff; font-size:11.5px; font-weight:700;
+        padding:7px 11px; border-radius:20px; z-index:30}
+</style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="login" class="center">
+  <div class="login">
+    <div class="mark">
+      <div class="n">V3 <span style="background:linear-gradient(90deg,var(--violet),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent">OS</span></div>
+      <div class="t">Sistema operativo comercial</div>
+    </div>
+    <div id="loginErr"></div>
+    <div class="field"><label>Email</label><input id="email" type="email" autocomplete="email"></div>
+    <div class="field"><label>Palavra-passe</label><input id="pw" type="password" autocomplete="current-password"></div>
+    <div id="nomeWrap" class="field" hidden><label>O teu nome</label><input id="nome" autocomplete="name"></div>
+    <button class="btn" id="btnEntrar">Entrar</button>
+    <p class="muted" style="text-align:center;margin:14px 0 0">
+      <a href="#" id="toggleReg" style="color:var(--violet)">Primeira vez? Criar conta</a>
+    </p>
+  </div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="app" hidden>
+  <header>
+    <div class="wrap">
+      <div class="hrow">
+        <div class="logo">V3 <b>OS</b></div>
+        <div class="who"><span id="quem"></span> · <a href="#" id="sair" style="color:#A9A8C4">sair</a></div>
+      </div>
+      <div class="tabs">
+        <button class="tab on" data-v="dia">O Meu Dia</button>
+        <button class="tab" data-v="painel">O Painel</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ─── O MEU DIA ─── -->
+  <main id="vDia" class="wrap">
+    <div class="card meta">
+      <div class="big"><span id="feitas">0</span> <span style="opacity:.5;font-size:24px">de</span> <span id="alvo">9</span></div>
+      <div class="sub">ligações hoje</div>
+      <div class="bar"><i id="barra" style="width:0%"></i></div>
+      <div class="mini">
+        <div><b id="mEfect">0</b>atenderam</div>
+        <div><b id="mMarc">0</b>visitas marcadas</div>
+        <div><b id="mReal">0</b>visitas feitas</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>A tua lista · <span id="nFila">0</span></h2>
+      <div id="fila"><div class="vazio">A carregar…</div></div>
+    </div>
+  </main>
+
+  <!-- ─── O PAINEL ─── -->
+  <main id="vPainel" class="wrap" hidden>
+    <div class="card">
+      <h2>Esta semana, por pessoa</h2>
+      <table>
+        <thead><tr><th>Pessoa</th><th class="n">Lig.</th><th class="n">Atend.</th><th class="n">Marc.</th><th class="n">Feitas</th><th class="n">Vendas</th></tr></thead>
+        <tbody id="tSemana"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>O funil</h2>
+      <div class="funil" id="funil"></div>
+    </div>
+
+    <div class="card">
+      <h2>Lista vermelha</h2>
+      <p class="muted" style="margin:-6px 0 12px">Contas sem próximo passo, ou já fora da cadência.</p>
+      <div id="vermelha"></div>
+    </div>
+
+    <div class="card">
+      <h2>Vendas com pagamento · este mês</h2>
+      <div class="meta" style="background:none;border:0;padding:0">
+        <div class="big" style="color:var(--text)"><span id="vendasMes">0</span></div>
+        <div class="sub" style="color:var(--muted)">TCV fee <span id="tcvMes">0</span> MT</div>
+      </div>
+    </div>
+  </main>
+
+  <button class="fab" id="fabNova" title="Nova conta">+</button>
+  <div class="pend" id="pend" hidden></div>
+</div>
+
+<!-- ══════════ FOLHA: REGISTAR ══════════ -->
+<div class="sheet" id="shReg" hidden>
+  <div class="sheetbox">
+    <div class="grab"></div>
+    <div style="display:flex;align-items:start;justify-content:space-between;gap:10px">
+      <div>
+        <div style="font:700 18px/1.25 Georgia,serif" id="rNome"></div>
+        <div class="muted" id="rMeta"></div>
+      </div>
+      <button class="muted" id="rFechar" style="font-size:22px;line-height:1">×</button>
+    </div>
+    <div id="rErro"></div>
+    <a class="btn dark" id="rLigar" style="margin-top:13px" href="#">Ligar</a>
+    <div class="acts" id="rAcoes"></div>
+    <button class="btn ghost" id="rDormente" style="margin-top:9px">Pôr a dormir 30 dias</button>
+  </div>
+</div>
+
+<!-- ══════════ FOLHA: NOVA CONTA ══════════ -->
+<div class="sheet" id="shNova" hidden>
+  <div class="sheetbox">
+    <div class="grab"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="font:700 18px/1 Georgia,serif">Nova conta</div>
+      <button class="muted" id="nFechar" style="font-size:22px;line-height:1">×</button>
+    </div>
+    <div id="nErro"></div>
+    <div class="field" style="margin-top:14px"><label>Nome do negócio</label><input id="nNome" placeholder="Restaurante Uta Nhoxa"></div>
+    <div class="field"><label>Telefone</label><input id="nTel" type="tel" inputmode="tel" placeholder="84…"></div>
+    <div class="row2">
+      <div class="field"><label>Segmento</label>
+        <select id="nSeg">
+          <option value="Restaurante">Restaurante</option>
+          <option value="Clínica">Clínica</option>
+          <option value="Serviços">Serviços</option>
+          <option value="Retalho">Retalho</option>
+          <option value="Outro">Outro</option>
+        </select></div>
+      <div class="field"><label>Origem</label>
+        <select id="nOri">
+          <option value="hunting">Hunting</option>
+          <option value="inbound">Inbound</option>
+          <option value="indicacao">Indicação</option>
+          <option value="outbound">Outbound</option>
+          <option value="evento">Evento</option>
+          <option value="outro">Outro</option>
+        </select></div>
+    </div>
+    <button class="btn" id="nGuardar">Guardar</button>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const URL  = 'https://reslvumdumqhuvmnksng.supabase.co';
+const KEY  = 'sb_publishable_rwOyKrTOK3kuqu8g2ZTj2Q_IyXq6Sfs';
+const sb   = createClient(URL, KEY);
+const $    = s => document.querySelector(s);
+const hoje = () => new Date().toISOString().slice(0,10);
+const mais = d => { const x=new Date(); x.setDate(x.getDate()+d); return x.toISOString().slice(0,10); };
+
+let eu = null, contas = [], registando = null;
+
+/* ── fila de recuperação: se a rede falhar, o toque não se perde ── */
+const FILA = 'v3os_pendentes';
+const lerFila   = () => { try { return JSON.parse(localStorage.getItem(FILA)||'[]'); } catch { return []; } };
+const gravaFila = f => { try { localStorage.setItem(FILA, JSON.stringify(f)); } catch {} ; pintaPend(); };
+function pintaPend(){
+  const n = lerFila().length;
+  $('#pend').hidden = n === 0;
+  $('#pend').textContent = n ? `${n} por sincronizar` : '';
+}
+async function escoarFila(){
+  let f = lerFila(); if(!f.length) return;
+  const resta = [];
+  for(const t of f){
+    try{
+      const { error } = await sb.from(t.tabela).insert(t.dados);
+      if(error) throw error;
+    }catch{ resta.push(t); }
+  }
+  gravaFila(resta);
+}
+
+/* ── temperatura ── */
+const TEMPS = {
+  super_hot:{t:'Super hot', c:'#DC2626', f:'#FEE2E2'},
+  hot:      {t:'Hot',       c:'#EA580C', f:'#FFEDD5'},
+  warm:     {t:'Warm',      c:'#B26A00', f:'#FEF3C7'},
+  novo:     {t:'Novo',      c:'#7C3AED', f:'#EDE7FF'},
+  cold:     {t:'Cold',      c:'#6B6880', f:'#EEEEF4'},
+  cliente:  {t:'Cliente',   c:'#059669', f:'#D1FAE5'},
+  perdido:  {t:'Perdido',   c:'#9A99B5', f:'#F1F1F6'},
+};
+const ORDEM = { super_hot:0, hot:1, warm:2, novo:3, cold:4, cliente:9, perdido:9 };
+const ESTADOS = {
+  alvo:'Alvo', em_contacto:'Em contacto', visita_marcada:'Visita marcada',
+  visita_feita:'Visita feita', proposta:'Proposta', cliente:'Cliente',
+  perdido:'Perdido', dormente:'Dormente'
+};
+
+/* ══════════ AUTENTICAÇÃO ══════════ */
+let modoRegisto = false;
+$('#toggleReg').onclick = e => {
+  e.preventDefault(); modoRegisto = !modoRegisto;
+  $('#nomeWrap').hidden = !modoRegisto;
+  $('#btnEntrar').textContent = modoRegisto ? 'Criar conta' : 'Entrar';
+  $('#toggleReg').textContent = modoRegisto ? 'Já tenho conta' : 'Primeira vez? Criar conta';
+};
+$('#btnEntrar').onclick = async () => {
+  const email = $('#email').value.trim(), pw = $('#pw').value;
+  $('#loginErr').innerHTML = '';
+  if(!email || !pw) return erro('#loginErr','Email e palavra-passe.');
+  $('#btnEntrar').disabled = true;
+  const r = modoRegisto
+    ? await sb.auth.signUp({ email, password: pw, options:{ data:{ nome: $('#nome').value.trim() } } })
+    : await sb.auth.signInWithPassword({ email, password: pw });
+  $('#btnEntrar').disabled = false;
+  if(r.error) return erro('#loginErr', r.error.message);
+  if(modoRegisto && !r.data.session) return erro('#loginErr','Conta criada. Confirma o email e entra.');
+  arrancar();
+};
+$('#sair').onclick = async e => { e.preventDefault(); await sb.auth.signOut(); location.reload(); };
+const erro = (sel,msg) => { $(sel).innerHTML = `<div class="erro">${msg}</div>`; };
+
+/* ══════════ ARRANQUE ══════════ */
+async function arrancar(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(!session){ $('#login').hidden = false; $('#app').hidden = true; return; }
+  const { data:perfil } = await sb.from('perfis').select('*').eq('id', session.user.id).single();
+  eu = perfil || { id: session.user.id, nome: session.user.email, alvo_ligacoes_dia: 9 };
+  $('#login').hidden = true; $('#app').hidden = false;
+  $('#quem').textContent = eu.nome;
+  pintaPend(); await escoarFila();
+  await recarregar();
+}
+window.addEventListener('online', escoarFila);
+
+async function recarregar(){ await Promise.all([carregarDia(), carregarContas()]); }
+
+/* ══════════ O MEU DIA ══════════ */
+async function carregarDia(){
+  const { data } = await sb.from('v_hoje').select('*').eq('utilizador', eu.id).maybeSingle();
+  const d = data || { ligacoes:0, contactos_efectivos:0, visitas_marcadas:0, visitas_realizadas:0 };
+  const alvo = eu.alvo_ligacoes_dia || 9;
+  $('#feitas').textContent = d.ligacoes;
+  $('#alvo').textContent   = alvo;
+  $('#barra').style.width  = Math.min(100, (d.ligacoes/alvo)*100) + '%';
+  $('#mEfect').textContent = d.contactos_efectivos;
+  $('#mMarc').textContent  = d.visitas_marcadas;
+  $('#mReal').textContent  = d.visitas_realizadas;
+}
+
+async function carregarContas(){
+  const { data, error } = await sb.from('v_contas').select('*')
+    .not('estado','in','("cliente","perdido")');
+  if(error){ $('#fila').innerHTML = `<div class="erro">${error.message}</div>`; return; }
+  contas = (data||[]).sort((a,b)=>
+    (b.atrasada - a.atrasada) ||
+    (ORDEM[a.temperatura] - ORDEM[b.temperatura]) ||
+    (b.dias_sem_contacto - a.dias_sem_contacto)
+  );
+  pintarFila();
+}
+
+function pintarFila(){
+  $('#nFila').textContent = contas.length;
+  if(!contas.length){
+    $('#fila').innerHTML = '<div class="vazio">Nada na fila.<br>Toca no <b>+</b> para acrescentar contas.</div>';
+    return;
+  }
+  $('#fila').innerHTML = contas.map(c => {
+    const t = TEMPS[c.temperatura] || TEMPS.cold;
+    const passo = c.sem_proximo_passo ? '⚠ sem próximo passo'
+                : (c.proximo_passo ? c.proximo_passo : ESTADOS[c.estado]);
+    return `<button class="conta" data-id="${c.id}">
+      <span class="dot" style="background:${t.c}"></span>
+      <span class="cinfo">
+        <span class="cnome">${esc(c.nome)}</span>
+        <span class="cmeta">${ESTADOS[c.estado]} · ${esc(passo)}</span>
+      </span>
+      ${c.atrasada ? `<span class="atraso">${c.dias_sem_contacto}d</span>` : ''}
+      <span class="badge" style="color:${t.c};background:${t.f}">${t.t}</span>
+    </button>`;
+  }).join('');
+  $('#fila').querySelectorAll('.conta').forEach(b =>
+    b.onclick = () => abrirRegisto(b.dataset.id));
+}
+const esc = s => String(s??'').replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+
+/* ══════════ REGISTAR — o toque de três segundos ══════════ */
+const ACCOES = [
+  { k:'nao_atendeu',           ico:'📵', t:'Não atendeu',              s:'Volta amanhã' },
+  { k:'atendeu_marcou_visita', ico:'📅', t:'Atendeu — marquei visita', s:'Pede a data' },
+  { k:'atendeu_pensar',        ico:'🤔', t:'Atendeu — ficou de pensar',s:'Volta em 3 dias' },
+  { k:'atendeu_sem_interesse', ico:'🚫', t:'Atendeu — sem interesse',  s:'Fecha a conta' },
+  { k:'pessoa_errada',         ico:'🔀', t:'Pessoa errada',            s:'Volta amanhã' },
+  { k:'visita_realizada',      ico:'✅', t:'Visita realizada',         s:'Seguimento em 2 dias' },
+  { k:'proposta_apresentada',  ico:'📄', t:'Proposta apresentada',     s:'Seguimento em 3 dias' },
+];
+
+function abrirRegisto(id){
+  registando = contas.find(c => c.id === id); if(!registando) return;
+  $('#rNome').textContent = registando.nome;
+  $('#rMeta').textContent = `${ESTADOS[registando.estado]} · ${registando.dias_sem_contacto}d sem contacto`;
+  $('#rErro').innerHTML = '';
+  const tel = registando.telefone || registando.whatsapp;
+  $('#rLigar').href = tel ? `tel:${tel}` : '#';
+  $('#rLigar').textContent = tel ? `Ligar ${tel}` : 'Sem telefone registado';
+  $('#rLigar').style.opacity = tel ? 1 : .45;
+  $('#rAcoes').innerHTML = ACCOES.map(a =>
+    `<button class="act" data-k="${a.k}"><span class="ico">${a.ico}</span>
+      <span>${a.t}<small>${a.s}</small></span></button>`).join('');
+  $('#rAcoes').querySelectorAll('.act').forEach(b => b.onclick = () => registar(b.dataset.k));
+  $('#shReg').hidden = false;
+}
+$('#rFechar').onclick = () => { $('#shReg').hidden = true; };
+$('#shReg').onclick = e => { if(e.target.id === 'shReg') $('#shReg').hidden = true; };
+$('#rDormente').onclick = () => aplicar({ estado:'dormente', proxima_data: mais(30),
+                                          proximo_passo:'Reactivar' }, null);
+
+async function registar(k){
+  let mud = {}, tipo = 'ligacao';
+  if(k === 'nao_atendeu')                mud = { estado: est('em_contacto'), proxima_data: mais(1), proximo_passo:'Voltar a ligar' };
+  if(k === 'atendeu_pensar')             mud = { estado: est('em_contacto'), proxima_data: mais(3), proximo_passo:'Seguimento' };
+  if(k === 'pessoa_errada')              mud = { estado: est('em_contacto'), proxima_data: mais(1), proximo_passo:'Falar com o decisor' };
+  if(k === 'atendeu_sem_interesse'){
+    const m = prompt('Numa palavra, porquê?') || 'sem interesse';
+    mud = { estado:'perdido', motivo_perda:m, proximo_passo:null, proxima_data:null };
+  }
+  if(k === 'atendeu_marcou_visita'){
+    const d = prompt('Data da visita (AAAA-MM-DD):', mais(2));
+    if(!d) return;
+    mud = { estado:'visita_marcada', proxima_data:d, proximo_passo:'Fazer a visita' };
+  }
+  if(k === 'visita_realizada'){
+    tipo = 'visita';
+    mud = { estado:'visita_feita', proxima_data: mais(2), proximo_passo:'Seguimento da visita' };
+  }
+  if(k === 'proposta_apresentada'){
+    tipo = 'reuniao';
+    mud = { estado:'proposta', proxima_data: mais(3), proximo_passo:'Fechar' };
+  }
+  await aplicar(mud, { tipo, resultado:k });
+}
+/* não faz recuar o funil: quem já está em proposta não volta a "em contacto" */
+function est(novo){
+  const rank = { alvo:0, em_contacto:1, visita_marcada:2, visita_feita:3, proposta:4 };
+  const act = rank[registando.estado] ?? 0;
+  return (rank[novo] ?? 0) > act ? novo : registando.estado;
+}
+
+async function aplicar(mud, inter){
+  const id = registando.id;
+  $('#rErro').innerHTML = '';
+  try{
+    if(inter){
+      const { error } = await sb.from('interacoes').insert({
+        conta_id:id, utilizador:eu.id, tipo:inter.tipo, resultado:inter.resultado
+      });
+      if(error) throw error;
+    }
+    const { error:e2 } = await sb.from('contas').update(mud).eq('id', id);
+    if(e2) throw e2;
+    $('#shReg').hidden = true;
+    await recarregar();
+  }catch(ex){
+    if(inter){
+      const f = lerFila();
+      f.push({ tabela:'interacoes', op:'insert',
+               dados:{ conta_id:id, utilizador:eu.id, tipo:inter.tipo, resultado:inter.resultado } });
+      gravaFila(f);
+    }
+    erro('#rErro', 'Sem rede. O registo ficou guardado e sincroniza sozinho. ' + (ex.message||''));
+  }
+}
+
+/* ══════════ NOVA CONTA ══════════ */
+$('#fabNova').onclick = () => { $('#nErro').innerHTML=''; $('#shNova').hidden = false; $('#nNome').focus(); };
+$('#nFechar').onclick = () => { $('#shNova').hidden = true; };
+$('#shNova').onclick = e => { if(e.target.id === 'shNova') $('#shNova').hidden = true; };
+$('#nGuardar').onclick = async () => {
+  const nome = $('#nNome').value.trim();
+  if(!nome) return erro('#nErro','Falta o nome.');
+  const { error } = await sb.from('contas').insert({
+    nome, telefone: $('#nTel').value.trim() || null,
+    segmento: $('#nSeg').value, origem: $('#nOri').value,
+    dono: eu.id, criado_por: eu.id,
+    estado:'alvo', proximo_passo:'Primeira ligação', proxima_data: hoje()
+  });
+  if(error) return erro('#nErro', error.message);
+  $('#nNome').value = $('#nTel').value = '';
+  $('#shNova').hidden = true;
+  await recarregar();
+};
+
+/* ══════════ O PAINEL ══════════ */
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === t));
+  const p = t.dataset.v === 'painel';
+  $('#vDia').hidden = p; $('#vPainel').hidden = !p;
+  if(p) carregarPainel();
+});
+
+function segundaFeira(){
+  const d = new Date(); const w = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - w); return d.toISOString().slice(0,10);
+}
+
+async function carregarPainel(){
+  const seg = segundaFeira(), m1 = hoje().slice(0,7) + '-01';
+
+  const [{ data:sem }, { data:ven }, { data:fun }] = await Promise.all([
+    sb.from('v_semana').select('*').eq('semana', seg),
+    sb.from('v_vendas').select('*').eq('mes', m1),
+    sb.from('v_funil').select('*'),
+  ]);
+
+  const porNome = {};
+  (sem||[]).forEach(r => porNome[r.nome||'—'] = { ...r, vendas:0 });
+  (ven||[]).forEach(r => {
+    const k = r.nome || '—';
+    porNome[k] = porNome[k] || { nome:k, ligacoes:0, contactos_efectivos:0, visitas_marcadas:0, visitas_realizadas:0 };
+    porNome[k].vendas = (porNome[k].vendas||0) + Number(r.vendas_pagas||0);
+  });
+  const linhas = Object.values(porNome);
+  $('#tSemana').innerHTML = linhas.length ? linhas.map(r => `<tr>
+      <td><b>${esc(r.nome||'—')}</b></td>
+      <td class="n">${r.ligacoes||0}</td><td class="n">${r.contactos_efectivos||0}</td>
+      <td class="n">${r.visitas_marcadas||0}</td><td class="n">${r.visitas_realizadas||0}</td>
+      <td class="n"><b>${r.vendas||0}</b></td></tr>`).join('')
+    : '<tr><td colspan="6" class="muted" style="padding:16px 6px">Ainda sem actividade esta semana.</td></tr>';
+
+  const ord = ['alvo','em_contacto','visita_marcada','visita_feita','proposta','cliente'];
+  const mapa = Object.fromEntries((fun||[]).map(f => [f.estado, f.contas]));
+  const topo = Math.max(1, ...ord.map(e => mapa[e] || 0));
+  $('#funil').innerHTML = ord.map(e => `<div class="fl">
+      <span class="nome">${ESTADOS[e]}</span>
+      <span class="track"><i style="width:${((mapa[e]||0)/topo)*100}%"></i></span>
+      <span class="v">${mapa[e]||0}</span></div>`).join('');
+
+  const vermelhas = contas.filter(c => c.atrasada || c.sem_proximo_passo);
+  $('#vermelha').innerHTML = vermelhas.length ? vermelhas.slice(0,25).map(c => `
+      <div class="conta" style="cursor:default">
+        <span class="dot" style="background:var(--red)"></span>
+        <span class="cinfo"><span class="cnome">${esc(c.nome)}</span>
+        <span class="cmeta">${c.sem_proximo_passo ? 'sem próximo passo' : `${c.dias_sem_contacto} dias sem contacto`} · ${esc(c.dono_nome||'sem dono')}</span></span>
+      </div>`).join('')
+    : '<div class="vazio">Nada vermelho. Bom sinal.</div>';
+
+  const tot = (ven||[]).reduce((a,r) => ({
+    v: a.v + Number(r.vendas_pagas||0), t: a.t + Number(r.tcv_fee||0) }), { v:0, t:0 });
+  $('#vendasMes').textContent = tot.v;
+  $('#tcvMes').textContent = tot.t.toLocaleString('pt-PT');
+}
+
+arrancar();
+</script>
+</body>
+</html>
