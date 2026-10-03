@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A0A16">
+<title>V3 OS</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230A0A16'/><text x='16' y='23' font-size='16' font-family='Georgia,serif' font-weight='bold' fill='%237C3AED' text-anchor='middle'>V3</text></svg>">
+<style>
+:root{
+  --violet:#7C3AED; --violet2:#5B49F5; --cyan:#22D3EE; --dark:#0A0A16; --indigo:#231A52;
+  --red:#DC2626; --orange:#EA580C; --amber:#B26A00; --green:#059669; --blue:#2563EB;
+  --bg:#F3F4FA; --card:#FFFFFF; --text:#13131F; --muted:#6B6880; --line:#E4E4EF; --soft:#F8F8FC;
+  --nav:#0A0A16; --navtext:#A9A8C4;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-t="light"]){
+  --bg:#07070F; --card:#141426; --text:#ECECF5; --muted:#9A99B5; --line:#26263F; --soft:#1A1A30;
+}}
+:root[data-t="dark"]{ --bg:#07070F; --card:#141426; --text:#ECECF5; --muted:#9A99B5; --line:#26263F; --soft:#1A1A30; }
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);
+  font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+h1,h2,h3{margin:0}
+a{color:var(--violet);text-decoration:none}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+input,select,textarea{font:inherit;width:100%;padding:10px 12px;border:1px solid var(--line);
+  border-radius:10px;background:var(--card);color:var(--text)}
+textarea{min-height:92px;resize:vertical;line-height:1.6}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--violet);outline-offset:1px}
+label{display:block;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.05em;margin:0 0 5px}
+.f{margin-bottom:13px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:640px){.g2,.g3{grid-template-columns:1fr}}
+
+/* ── estrutura ── */
+.app{display:flex;min-height:100dvh}
+nav{width:216px;flex:none;background:var(--nav);color:#fff;padding:18px 12px;
+  position:sticky;top:0;height:100dvh;overflow:auto}
+nav .mark{font:700 21px/1 Georgia,serif;padding:4px 10px 20px}
+nav .mark b{background:linear-gradient(90deg,var(--violet),var(--cyan));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+nav a.nv{display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:10px;
+  color:var(--navtext);font-size:14px;font-weight:600;margin-bottom:2px}
+nav a.nv.on{background:linear-gradient(90deg,var(--violet),var(--violet2));color:#fff}
+nav a.nv .ic{width:18px;text-align:center;font-size:15px}
+nav .pe{position:absolute;bottom:16px;left:12px;right:12px;font-size:11.5px;color:var(--navtext);
+  border-top:1px solid #ffffff1a;padding-top:12px}
+main{flex:1;min-width:0;padding:22px 26px 60px;max-width:1240px}
+@media(max-width:860px){
+  .app{display:block}
+  nav{position:fixed;bottom:0;top:auto;width:100%;height:auto;display:flex;gap:2px;padding:6px 4px;
+    z-index:40;overflow-x:auto;border-top:1px solid #ffffff1a}
+  nav .mark,nav .pe{display:none}
+  nav a.nv{flex-direction:column;gap:2px;font-size:8.5px;padding:7px 1px;margin:0;flex:1;min-width:0;
+    text-align:center;letter-spacing:-.02em;overflow:hidden}
+  nav a.nv span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  nav a.nv .ic{font-size:16px}
+  main{padding:16px 14px 92px}
+}
+
+/* ── peças ── */
+.hd{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.hd h1{font:700 27px/1.15 Georgia,serif;letter-spacing:-.015em}
+.hd .sb{font-size:13px;color:var(--muted);margin-top:3px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:17px;margin-bottom:14px}
+.card>h2{font:800 11px/1 system-ui;letter-spacing:.09em;text-transform:uppercase;color:var(--violet);
+  margin-bottom:13px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.dk{background:linear-gradient(125deg,var(--indigo),#3A2A90);color:#fff;border:0}
+.dk h2{color:#C9C6F0}
+.big{font:700 38px/1 Georgia,serif;letter-spacing:-.02em}
+.lbl{font-size:12.5px;color:var(--muted)}
+.dk .lbl{color:#C5C2EC}
+.bar{height:8px;border-radius:5px;background:#0000000f;overflow:hidden;margin-top:11px}
+.dk .bar{background:#ffffff26}
+.bar i{display:block;height:100%;border-radius:5px;transition:width .4s;
+  background:linear-gradient(90deg,var(--violet),var(--cyan))}
+.dk .bar i{background:linear-gradient(90deg,var(--cyan),#8DEEFC)}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(142px,1fr));gap:11px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:13px}
+.kpi .v{font:700 25px/1.1 Georgia,serif;letter-spacing:-.01em}
+.kpi .n{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;
+  font-weight:800;margin-bottom:5px}
+.kpi .d{font-size:11.5px;margin-top:3px}
+.up{color:var(--green)} .dn{color:var(--red)} .fl{color:var(--muted)}
+
+.btn{display:inline-block;padding:10px 16px;border-radius:10px;font-weight:700;font-size:14px;
+  background:var(--violet);color:#fff;text-align:center}
+.btn.g{background:transparent;border:1px solid var(--line);color:var(--text)}
+.btn.d{background:var(--dark);color:#fff}
+.btn.sm{padding:6px 11px;font-size:12.5px;border-radius:8px}
+.btn.w{display:block;width:100%}
+.btn:active{transform:translateY(1px)}
+.btn[disabled]{opacity:.5;pointer-events:none}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);
+  padding:0 8px 9px;font-weight:800;white-space:nowrap}
+td{padding:10px 8px;border-top:1px solid var(--line);vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.scr{overflow-x:auto;margin:0 -4px;padding:0 4px}
+
+.row{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:11px 3px;
+  border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+button.row:active{background:var(--soft)}
+.row .in{flex:1;min-width:0}
+.row .t1{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .t2{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.tag{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;
+  border-radius:20px;flex:none;white-space:nowrap}
+.warn{font-size:11px;font-weight:800;color:var(--red);flex:none}
+.empty{text-align:center;color:var(--muted);padding:28px 12px;font-size:13.5px}
+
+.al{display:flex;gap:10px;align-items:flex-start;background:#FFF2F2;color:#8A1C1C;border-radius:11px;
+  padding:12px 14px;margin-bottom:12px;font-size:13.5px}
+.al.am{background:#FFF6E5;color:#7A4A00}
+.al.ok{background:#E9FBF2;color:#065F46}
+:root[data-t="dark"] .al{background:#3A1414;color:#FCA5A5}
+:root[data-t="dark"] .al.am{background:#352607;color:#F3C878}
+:root[data-t="dark"] .al.ok{background:#0A2C20;color:#6EE7B7}
+@media(prefers-color-scheme:dark){:root:not([data-t="light"]) .al{background:#3A1414;color:#FCA5A5}
+ :root:not([data-t="light"]) .al.am{background:#352607;color:#F3C878}
+ :root:not([data-t="light"]) .al.ok{background:#0A2C20;color:#6EE7B7}}
+
+.prose{white-space:pre-wrap;line-height:1.68;font-size:14.5px}
+.blocos{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+@media(max-width:900px){.blocos{grid-template-columns:1fr}}
+.bloco{background:var(--soft);border:1px solid var(--line);border-radius:13px;padding:15px}
+.bloco h3{font:800 10.5px/1 system-ui;letter-spacing:.09em;text-transform:uppercase;margin-bottom:9px}
+
+.kan{display:grid;grid-template-columns:repeat(6,minmax(176px,1fr));gap:11px;overflow-x:auto;padding-bottom:6px}
+.col{background:var(--soft);border-radius:13px;padding:10px;min-height:110px}
+.col h4{font:800 10px/1 system-ui;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);
+  margin-bottom:9px;display:flex;justify-content:space-between}
+.crd{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 10px;
+  margin-bottom:7px;cursor:pointer;width:100%;text-align:left}
+.crd .t1{font-weight:700;font-size:13px}
+.crd .t2{font-size:11px;color:var(--muted);margin-top:2px}
+
+.fnl{display:grid;gap:7px}
+.fnl .l{display:flex;align-items:center;gap:10px;font-size:13.5px}
+.fnl .l .nm{width:118px;flex:none;color:var(--muted);font-size:12.5px}
+.fnl .l .tr{flex:1;height:23px;background:var(--soft);border-radius:7px;overflow:hidden}
+.fnl .l .tr i{display:block;height:100%;background:linear-gradient(90deg,var(--violet),var(--cyan))}
+.fnl .l .v{width:60px;text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+
+.tl{position:relative;padding-left:19px}
+.tl:before{content:"";position:absolute;left:5px;top:5px;bottom:5px;width:2px;background:var(--line)}
+.tl .ev{position:relative;padding:0 0 15px}
+.tl .ev:before{content:"";position:absolute;left:-18px;top:5px;width:9px;height:9px;border-radius:50%;
+  background:var(--violet);border:2px solid var(--card)}
+
+/* ── folhas ── */
+.sheet{position:fixed;inset:0;z-index:60;background:#07070Fb3;display:flex;
+  align-items:center;justify-content:center;padding:18px;overflow:auto}
+.sheet[hidden]{display:none}
+.box{background:var(--card);width:100%;max-width:560px;border-radius:17px;padding:20px;
+  max-height:90dvh;overflow:auto}
+.box.wide{max-width:860px}
+.box h3{font:700 19px/1.25 Georgia,serif;margin-bottom:3px}
+.xh{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.x{font-size:23px;line-height:1;color:var(--muted)}
+@media(max-width:640px){
+  .sheet{align-items:flex-end;padding:0}
+  .box{max-width:100%;border-radius:17px 17px 0 0;max-height:94dvh;padding-bottom:28px}
+}
+.acts{display:grid;gap:8px;margin-top:11px}
+.act{display:flex;align-items:center;gap:11px;padding:14px;border-radius:12px;border:1px solid var(--line);
+  font-weight:700;text-align:left;background:var(--soft);width:100%}
+.act:active{background:var(--bg)}
+.act .ic{font-size:18px;width:23px;text-align:center;flex:none}
+.act small{display:block;font-weight:500;font-size:11.5px;color:var(--muted);margin-top:1px}
+
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:13px}
+.chip{padding:6px 12px;border-radius:20px;border:1px solid var(--line);font-size:12.5px;font-weight:600;
+  background:var(--card)}
+.chip.on{background:var(--dark);color:#fff;border-color:var(--dark)}
+.sec{font:800 10.5px/1 system-ui;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
+  margin:22px 0 10px}
+.pend{position:fixed;left:14px;bottom:76px;background:var(--amber);color:#fff;font-size:11.5px;
+  font-weight:700;padding:7px 12px;border-radius:20px;z-index:45}
+@media(min-width:861px){.pend{bottom:16px;left:232px}}
+.center{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login{width:100%;max-width:356px}
+.sp{height:1px;background:var(--line);margin:15px 0}
+.mini{font-size:11.5px;color:var(--muted)}
+.rt{display:flex;gap:7px;align-items:center}
+
+</style>
+</head>
+<body>
+
+<!-- ═══════ ENTRADA ═══════ -->
+<div id="login" class="center" hidden>
+  <div class="login">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font:700 36px/1 Georgia,serif">V3 <span style="background:linear-gradient(90deg,#7C3AED,#22D3EE);-webkit-background-clip:text;background-clip:text;color:transparent">OS</span></div>
+      <div class="mini" style="margin-top:7px">Sistema operativo comercial</div>
+    </div>
+    <div id="loginErr"></div>
+    <div class="f"><label>Email</label><input id="email" type="email" autocomplete="email"></div>
+    <div class="f"><label>Palavra-passe</label><input id="pw" type="password" autocomplete="current-password"></div>
+    <div id="nomeWrap" class="f" hidden><label>O teu nome</label><input id="nomeR" autocomplete="name"></div>
+    <button class="btn w" id="btnEntrar">Entrar</button>
+    <p style="text-align:center;margin:15px 0 0">
+      <a href="#" id="toggleReg" class="mini" style="color:var(--violet)">Primeira vez? Criar conta</a></p>
+  </div>
+</div>
+
+<!-- ═══════ APP ═══════ -->
+<div id="app" class="app" hidden>
+  <nav>
+    <div class="mark">V3 <b>OS</b></div>
+    <a class="nv" href="#inicio"><span class="ic">◆</span><span>O Plano</span></a>
+    <a class="nv" href="#dia"><span class="ic">☎</span><span>O Meu Dia</span></a>
+    <a class="nv" href="#pipeline"><span class="ic">▦</span><span>Pipeline</span></a>
+    <a class="nv" href="#compromissos"><span class="ic">✓</span><span>Compromissos</span></a>
+    <a class="nv" href="#wbr"><span class="ic">⟳</span><span>WBR</span></a>
+    <a class="nv" href="#metricas"><span class="ic">▲</span><span>Métricas</span></a>
+    <a class="nv" href="#clientes"><span class="ic">★</span><span>Clientes</span></a>
+    <div class="pe"><span id="quem"></span><br>
+      <a href="#" id="sair" style="color:var(--navtext)">sair</a></div>
+  </nav>
+  <main id="view"></main>
+</div>
+
+<div class="pend" id="pend" hidden></div>
+
+<div class="sheet" id="sheet" hidden><div class="box" id="sheetbox"></div></div>
+
+<!-- ═══════ PLANO B: se a app não arrancar ═══════ -->
+<div id="falha" class="center" hidden>
+  <div class="login" style="text-align:center">
+    <div style="font:700 30px/1 Georgia,serif">V3 <span style="background:linear-gradient(90deg,#7C3AED,#22D3EE);-webkit-background-clip:text;background-clip:text;color:transparent">OS</span></div>
+    <div class="al am" style="margin-top:18px;text-align:left">
+      <div><b>A app não conseguiu arrancar.</b><br>
+      Quase sempre é a ligação à internet. Verifica a rede e tenta outra vez.</div></div>
+    <button class="btn w" onclick="location.reload()">Tentar outra vez</button>
+  </div>
+</div>
+
+<script>
+  /* Vigia: se ao fim de 10s nem a entrada nem a app estiverem à vista, algo falhou. */
+  setTimeout(function(){
+    var l = document.getElementById('login'), a = document.getElementById('app');
+    if(l && a && l.hidden && a.hidden) document.getElementById('falha').hidden = false;
+  }, 10000);
+</script>
+
+<script type="module">
+/* Dois CDN: se o primeiro nao responder, tenta o segundo.
+   Em rede fraca isto e a diferenca entre a app abrir e ficar um ecra branco. */
+let createClient;
+try {
+  ({ createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'));
+} catch {
+  ({ createClient } = await import('https://esm.sh/@supabase/supabase-js@2'));
+}
+
+const SB_URL = 'https://reslvumdumqhuvmnksng.supabase.co';
+const SB_KEY = 'sb_publishable_rwOyKrTOK3kuqu8g2ZTj2Q_IyXq6Sfs';
+export const sb = createClient(SB_URL, SB_KEY);
+
+/* ═══════════ utilitários ═══════════ */
+const $  = s => document.querySelector(s);
+const el = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, m =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const hoje  = () => new Date().toISOString().slice(0,10);
+const mais  = d => { const x = new Date(); x.setDate(x.getDate()+d); return x.toISOString().slice(0,10); };
+const mes1  = (d = new Date()) => new Date(d.getFullYear(), d.getMonth(), 1)
+  .toLocaleDateString('sv-SE');
+const segunda = (d = new Date()) => { const x = new Date(d); const w = (x.getDay()+6)%7;
+  x.setDate(x.getDate()-w); return x.toLocaleDateString('sv-SE'); };
+const MT = n => (Number(n)||0).toLocaleString('pt-PT',{maximumFractionDigits:0});
+const pc = n => n === null || n === undefined || n === '' ? '—'
+  : (Number(n)*100).toFixed(1).replace('.0','') + '%';
+const dt = s => s ? new Date(s).toLocaleDateString('pt-PT',{day:'2-digit',month:'short'}) : '—';
+const dtl = s => s ? new Date(s).toLocaleDateString('pt-PT',{day:'2-digit',month:'long',year:'numeric'}) : '—';
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro',
+               'Outubro','Novembro','Dezembro'];
+const nomeMes = iso => { const d = new Date(iso+'T00:00:00'); return MESES[d.getMonth()]+' de '+d.getFullYear(); };
+
+export const TEMPS = {
+  super_hot:{t:'Super hot',c:'#DC2626',f:'#FEE2E2'}, hot:{t:'Hot',c:'#EA580C',f:'#FFEDD5'},
+  warm:{t:'Warm',c:'#B26A00',f:'#FEF3C7'},            novo:{t:'Novo',c:'#7C3AED',f:'#EDE7FF'},
+  cold:{t:'Cold',c:'#6B6880',f:'#EEEEF4'},            cliente:{t:'Cliente',c:'#059669',f:'#D1FAE5'},
+  perdido:{t:'Perdido',c:'#9A99B5',f:'#F1F1F6'},
+};
+const ORD = { super_hot:0, hot:1, warm:2, novo:3, cold:4, cliente:9, perdido:9 };
+export const ESTADOS = { alvo:'Alvo', em_contacto:'Em contacto', visita_marcada:'Visita marcada',
+  visita_feita:'Visita feita', proposta:'Proposta', cliente:'Cliente', perdido:'Perdido',
+  dormente:'Dormente' };
+const FUNIL = ['alvo','em_contacto','visita_marcada','visita_feita','proposta','cliente'];
+const ORIGENS = { hunting:'Hunting', inbound:'Inbound', indicacao:'Indicação',
+  outbound:'Outbound', evento:'Evento', outro:'Outro' };
+const METRICAS = { ligacoes:'Ligações', contactos_efectivos:'Contactos efectivos',
+  visitas_marcadas:'Visitas marcadas', visitas_realizadas:'Visitas realizadas',
+  contas_criadas:'Contas captadas', vendas_pagas:'Vendas pagas' };
+
+/* ═══════════ estado ═══════════ */
+const S = { eu:null, equipa:[], contas:[], linhas:[], semana:segunda(), mes:mes1(), rota:'inicio' };
+const ceo = () => S.eu?.papel === 'ceo';
+
+/* ═══════════ fila offline ═══════════ */
+const FQ = 'v3os_fila';
+const fila  = () => { try { return JSON.parse(localStorage.getItem(FQ)||'[]'); } catch { return []; } };
+const setFila = f => { try { localStorage.setItem(FQ, JSON.stringify(f)); } catch {} ; pintaFila(); };
+function pintaFila(){ const n = fila().length; const p = el('pend');
+  if(!p) return; p.hidden = !n; p.textContent = n ? `${n} por sincronizar` : ''; }
+async function escoar(){ const f = fila(); if(!f.length) return; const resta = [];
+  for(const t of f){ const { error } = await sb.from(t.tabela).insert(t.dados); if(error) resta.push(t); }
+  setFila(resta); }
+window.addEventListener('online', escoar);
+
+/* ═══════════ avisos ═══════════ */
+function aviso(msg, tipo='al'){
+  const d = document.createElement('div');
+  d.className = 'al ' + (tipo==='ok'?'ok':tipo==='am'?'am':'');
+  d.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:90;'+
+                    'max-width:420px;box-shadow:0 8px 28px #0003';
+  d.textContent = msg; document.body.appendChild(d);
+  setTimeout(()=>d.remove(), 4200);
+}
+
+/* ═══════════ autenticação ═══════════ */
+let modoReg = false;
+export function ligarLogin(){
+  el('toggleReg').onclick = e => { e.preventDefault(); modoReg = !modoReg;
+    el('nomeWrap').hidden = !modoReg;
+    el('btnEntrar').textContent = modoReg ? 'Criar conta' : 'Entrar';
+    el('toggleReg').textContent = modoReg ? 'Já tenho conta' : 'Primeira vez? Criar conta'; };
+  el('btnEntrar').onclick = async () => {
+    const email = el('email').value.trim(), pw = el('pw').value;
+    el('loginErr').innerHTML = '';
+    if(!email || !pw) return erroLogin('Email e palavra-passe.');
+    el('btnEntrar').disabled = true;
+    const r = modoReg
+      ? await sb.auth.signUp({ email, password:pw, options:{ data:{ nome: el('nomeR').value.trim() } } })
+      : await sb.auth.signInWithPassword({ email, password:pw });
+    el('btnEntrar').disabled = false;
+    if(r.error) return erroLogin(r.error.message);
+    if(modoReg && !r.data.session)
+      return erroLogin('Conta criada. Pede ao Cyber para a activar.','am');
+    arrancar();
+  };
+}
+const erroLogin = (m,t='') => { el('loginErr').innerHTML = `<div class="al ${t}">${esc(m)}</div>`; };
+
+export async function arrancar(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(!session){ el('login').hidden = false; el('app').hidden = true; return; }
+  const { data:p } = await sb.from('perfis').select('*').eq('id', session.user.id).maybeSingle();
+  S.eu = p || { id:session.user.id, nome:session.user.email, alvo_ligacoes_dia:9, papel:'socio' };
+  el('login').hidden = true; el('app').hidden = false;
+  el('quem').textContent = S.eu.nome + (ceo() ? ' · CEO' : '');
+  const [{ data:eq }, { data:lr }] = await Promise.all([
+    sb.from('perfis').select('*').eq('activo',true).order('nome'),
+    sb.from('linhas_receita').select('*').eq('activa',true).order('nome'),
+  ]);
+  S.equipa = eq || []; S.linhas = lr || [];
+  pintaFila(); await escoar();
+  window.addEventListener('hashchange', router);
+  router();
+}
+el('sair').onclick = async e => { e.preventDefault(); await sb.auth.signOut(); location.reload(); };
+
+/* ═══════════ encaminhador ═══════════ */
+const ROTAS = ['inicio','dia','pipeline','compromissos','wbr','metricas','clientes'];
+async function router(){
+  const h = (location.hash || '#inicio').slice(1);
+  const [r, arg] = h.split('/');
+  S.rota = ROTAS.includes(r) ? r : 'inicio';
+  document.querySelectorAll('nav a.nv').forEach(a =>
+    a.classList.toggle('on', a.getAttribute('href') === '#'+S.rota));
+  const v = el('view'); v.innerHTML = '<div class="empty">A carregar…</div>';
+  try{
+    if(r === 'conta' && arg)        await vConta(arg);
+    else if(S.rota === 'inicio')    await vInicio();
+    else if(S.rota === 'dia')       await vDia();
+    else if(S.rota === 'pipeline')  await vPipeline();
+    else if(S.rota === 'compromissos') await vCompromissos();
+    else if(S.rota === 'wbr')       await vWbr();
+    else if(S.rota === 'metricas')  await vMetricas();
+    else if(S.rota === 'clientes')  await vClientes();
+  }catch(ex){
+    v.innerHTML = `<div class="al">Erro a carregar: ${esc(ex.message||ex)}</div>`;
+  }
+  window.scrollTo(0,0);
+}
+const ir = r => { location.hash = '#'+r; };
+
+/* ═══════════ dados ═══════════ */
+async function carregarContas(){
+  const { data, error } = await sb.from('v_contas').select('*');
+  if(error) throw error;
+  S.contas = (data||[]).sort((a,b)=>
+    (b.atrasada - a.atrasada) || (ORD[a.temperatura]-ORD[b.temperatura]) ||
+    (b.dias_sem_contacto - a.dias_sem_contacto));
+  return S.contas;
+}
+const nomeDe = id => S.equipa.find(p => p.id === id)?.nome || '—';
+
+/* ══════════════════════════════════════════════════════
+   1 · INÍCIO — O PLANO
+   ══════════════════════════════════════════════════════ */
+async function vInicio(){
+  const [{ data:planos }, { data:tar }, { data:acc }, { data:hj }, { data:ven }] = await Promise.all([
+    sb.from('planos').select('*').eq('periodo', S.mes).eq('horizonte','mes').limit(1),
+    sb.from('v_tarefas').select('*').eq('dono', S.eu.id).eq('estado','pendente').order('prazo'),
+    sb.from('v_accoes').select('*').eq('dono', S.eu.id).eq('estado','aberta').order('prazo'),
+    sb.from('v_hoje').select('*').eq('utilizador', S.eu.id).maybeSingle(),
+    sb.from('v_vendas').select('*').eq('mes', S.mes),
+  ]);
+  const plano = planos?.[0];
+  let dri = [];
+  if(plano){
+    const { data } = await sb.from('plano_dri').select('*').eq('plano_id', plano.id).order('area');
+    dri = data || [];
+  }
+  const fact = (ven||[]).reduce((a,r)=>a+Number(r.tcv_fee||0),0);
+  const alvoF = Number(plano?.target_faturacao||0);
+  const d = hj || { ligacoes:0 };
+  const alvoL = S.eu.alvo_ligacoes_dia || 9;
+
+  el('view').innerHTML = `
+  <div class="hd">
+    <div><h1>${plano ? esc(plano.titulo) : nomeMes(S.mes)}</h1>
+      <div class="sb">O plano de ${nomeMes(S.mes)} · ${plano?.publicado?'publicado':'rascunho'}</div></div>
+    ${ceo() ? `<button class="btn" id="bPlano">${plano?'Editar plano':'Criar plano'}</button>` : ''}
+  </div>
+
+  ${!plano ? `<div class="card"><div class="empty">
+      Ainda não há plano para ${nomeMes(S.mes)}.<br>
+      ${ceo()?'Carrega em <b>Criar plano</b> e escreve para onde vamos este mês.'
+             :'O Cyber ainda não publicou o plano deste mês.'}
+    </div></div>` : `
+    <div class="card dk">
+      <h2>Target de facturação</h2>
+      <div class="big">${MT(fact)} <span style="opacity:.45;font-size:22px">de ${MT(alvoF)} MT</span></div>
+      <div class="lbl">${alvoF ? pc(fact/alvoF)+' do alvo do mês' : 'sem alvo definido'}</div>
+      <div class="bar"><i style="width:${alvoF?Math.min(100,fact/alvoF*100):0}%"></i></div>
+    </div>
+
+    <div class="blocos">
+      <div class="bloco"><h3 style="color:var(--violet)">Estratégico</h3>
+        <div class="prose">${esc(plano.estrategico)||'<span class="mini">por escrever</span>'}</div></div>
+      <div class="bloco"><h3 style="color:var(--blue)">Táctico</h3>
+        <div class="prose">${esc(plano.tactico)||'<span class="mini">por escrever</span>'}</div></div>
+      <div class="bloco"><h3 style="color:var(--green)">Operacional</h3>
+        <div class="prose">${esc(plano.operacional)||'<span class="mini">por escrever</span>'}</div></div>
+    </div>
+
+    ${plano.linhas_receita ? `<div class="card"><h2>Linhas de receita</h2>
+      <div class="prose">${esc(plano.linhas_receita)}</div></div>` : ''}
+
+    <div class="card"><h2>Quem responde por quê · DRI</h2>
+      ${dri.length ? `<div class="scr"><table>
+        <thead><tr><th>Área</th><th>Responsável</th><th>Compromisso</th><th>Indicador</th><th class="n">Alvo</th></tr></thead>
+        <tbody>${dri.map(r=>`<tr>
+          <td><b>${esc(r.area)}</b></td><td>${esc(nomeDe(r.responsavel))}</td>
+          <td>${esc(r.compromisso)||'—'}</td><td>${esc(r.indicador)||'—'}</td>
+          <td class="n">${r.alvo!=null?MT(r.alvo):'—'}</td></tr>`).join('')}</tbody></table></div>`
+        : '<div class="empty">Sem responsáveis definidos.</div>'}
+    </div>`}
+
+  <div class="g2">
+    <div class="card"><h2>As minhas tarefas
+      <button class="btn sm g" id="bTarefa">+ tarefa</button></h2>
+      ${(tar||[]).length ? (tar||[]).map(t=>`
+        <div class="row">
+          <span class="dot" style="background:${t.atrasada?'var(--red)':t.prioridade==='alta'?'var(--orange)':'var(--violet)'}"></span>
+          <span class="in"><span class="t1">${esc(t.titulo)}</span>
+            <span class="t2">${t.prazo?dt(t.prazo):'sem prazo'}${t.atrasada?' · atrasada':''}</span></span>
+          <button class="btn sm g" data-feita="${t.id}">feita</button>
+        </div>`).join('') : '<div class="empty">Nada pendente.</div>'}
+    </div>
+
+    <div class="card"><h2>Acções do último WBR</h2>
+      ${(acc||[]).length ? (acc||[]).map(a=>`
+        <div class="row"><span class="dot" style="background:${a.atrasada?'var(--red)':'var(--amber)'}"></span>
+          <span class="in"><span class="t1">${esc(a.accao)}</span>
+            <span class="t2">${esc(a.indicador)} · ${a.prazo?dt(a.prazo):'sem prazo'}</span></span>
+          <button class="btn sm g" data-accao="${a.id}">feita</button>
+        </div>`).join('') : '<div class="empty">Sem acções em aberto.</div>'}
+    </div>
+  </div>
+
+  <div class="card dk">
+    <h2>O meu número de hoje</h2>
+    <div class="big">${d.ligacoes||0} <span style="opacity:.45;font-size:22px">de ${alvoL}</span></div>
+    <div class="lbl">ligações hoje</div>
+    <div class="bar"><i style="width:${Math.min(100,(d.ligacoes||0)/alvoL*100)}%"></i></div>
+    <div style="margin-top:14px"><a class="btn" style="background:#ffffff26" href="#dia">Ir trabalhar →</a></div>
+  </div>`;
+
+  if(ceo()) el('bPlano').onclick = () => editorPlano(plano);
+  el('bTarefa').onclick = () => novaTarefa();
+  document.querySelectorAll('[data-feita]').forEach(b => b.onclick = () => fecharTarefa(b.dataset.feita));
+  document.querySelectorAll('[data-accao]').forEach(b => b.onclick = async () => {
+    await sb.from('wbr_fca').update({ estado:'feita' }).eq('id', b.dataset.accao); router(); });
+}
+
+/* ── editor do plano ── */
+function editorPlano(p){
+  abrir(`<h3>${p?'Editar plano':'Novo plano'} · ${nomeMes(S.mes)}</h3>
+    <p class="mini">Isto é o que toda a equipa vê ao entrar. Escreve como se estivesses a falar com eles.</p>
+    <div class="f" style="margin-top:14px"><label>Título</label>
+      <input id="pTit" value="${esc(p?.titulo||nomeMes(S.mes))}"></div>
+    <div class="f"><label>Target de facturação (MT)</label>
+      <input id="pTar" type="number" inputmode="numeric" value="${p?.target_faturacao??''}"></div>
+    <div class="f"><label>Estratégico — para onde vamos</label>
+      <textarea id="pEst">${esc(p?.estrategico||'')}</textarea></div>
+    <div class="f"><label>Táctico — como lá chegamos</label>
+      <textarea id="pTac">${esc(p?.tactico||'')}</textarea></div>
+    <div class="f"><label>Operacional — o que se faz todos os dias</label>
+      <textarea id="pOpe">${esc(p?.operacional||'')}</textarea></div>
+    <div class="f"><label>Linhas de receita deste período</label>
+      <textarea id="pLin" style="min-height:64px">${esc(p?.linhas_receita||'')}</textarea></div>
+    <label class="rt" style="text-transform:none;font-size:14px;font-weight:600;color:var(--text)">
+      <input type="checkbox" id="pPub" style="width:auto" ${p?.publicado?'checked':''}>
+      Publicado — visível a toda a equipa</label>
+    <div class="sp"></div>
+    <div class="sec">Quem responde por quê</div>
+    <div id="driBox"></div>
+    <button class="btn g sm" id="bDri">+ área</button>
+    <div class="sp"></div>
+    <button class="btn w" id="pGuardar">Guardar plano</button>`, 'wide');
+
+  let dri = [];
+  const pinta = () => {
+    el('driBox').innerHTML = dri.map((d,i)=>`
+      <div class="g2" style="gap:8px;margin-bottom:8px;align-items:end">
+        <input placeholder="Área (Comercial, Marketing…)" value="${esc(d.area||'')}" data-d="area" data-i="${i}">
+        <select data-d="responsavel" data-i="${i}">
+          <option value="">— responsável —</option>
+          ${S.equipa.map(p=>`<option value="${p.id}" ${d.responsavel===p.id?'selected':''}>${esc(p.nome)}</option>`).join('')}
+        </select>
+        <input placeholder="Compromisso" value="${esc(d.compromisso||'')}" data-d="compromisso" data-i="${i}">
+        <div class="rt"><input placeholder="Indicador" value="${esc(d.indicador||'')}" data-d="indicador" data-i="${i}">
+          <input placeholder="Alvo" type="number" style="max-width:88px" value="${d.alvo??''}" data-d="alvo" data-i="${i}">
+          <button class="btn sm g" data-rm="${i}">×</button></div>
+      </div>`).join('');
+    el('driBox').querySelectorAll('[data-d]').forEach(inp => inp.oninput = () => {
+      dri[inp.dataset.i][inp.dataset.d] = inp.value || null; });
+    el('driBox').querySelectorAll('[data-rm]').forEach(b => b.onclick = () => {
+      dri.splice(+b.dataset.rm,1); pinta(); });
+  };
+  const carregar = async () => {
+    if(p){ const { data } = await sb.from('plano_dri').select('*').eq('plano_id',p.id).order('area');
+      dri = data || []; }
+    if(!dri.length) dri = [{area:'Comercial'},{area:'Marketing'},{area:'Operações'}];
+    pinta();
+  };
+  carregar();
+  el('bDri').onclick = () => { dri.push({}); pinta(); };
+
+  el('pGuardar').onclick = async () => {
+    const corpo = {
+      periodo:S.mes, horizonte:'mes', titulo:el('pTit').value.trim()||nomeMes(S.mes),
+      target_faturacao: el('pTar').value ? Number(el('pTar').value) : null,
+      estrategico:el('pEst').value, tactico:el('pTac').value, operacional:el('pOpe').value,
+      linhas_receita:el('pLin').value, publicado:el('pPub').checked, criado_por:S.eu.id };
+    let id = p?.id;
+    if(id){ const { error } = await sb.from('planos').update(corpo).eq('id',id);
+            if(error) return aviso(error.message); }
+    else { const { data, error } = await sb.from('planos').insert(corpo).select('id').single();
+           if(error) return aviso(error.message); id = data.id; }
+    await sb.from('plano_dri').delete().eq('plano_id', id);
+    const linhas = dri.filter(d=>d.area).map(d=>({ plano_id:id, area:d.area,
+      responsavel:d.responsavel||null, compromisso:d.compromisso||null,
+      indicador:d.indicador||null, alvo:d.alvo?Number(d.alvo):null }));
+    if(linhas.length) await sb.from('plano_dri').insert(linhas);
+    fechar(); aviso('Plano guardado.','ok'); router();
+  };
+}
+
+function novaTarefa(){
+  abrir(`<h3>Nova tarefa</h3>
+    <div class="f" style="margin-top:12px"><label>O quê</label><input id="tT"></div>
+    <div class="g2">
+      <div class="f"><label>Para quem</label><select id="tD">
+        ${S.equipa.map(p=>`<option value="${p.id}" ${p.id===S.eu.id?'selected':''}>${esc(p.nome)}</option>`).join('')}
+      </select></div>
+      <div class="f"><label>Prazo</label><input id="tP" type="date" value="${hoje()}"></div>
+    </div>
+    <div class="f"><label>Prioridade</label><select id="tR">
+      <option value="normal">Normal</option><option value="alta">Alta</option><option value="baixa">Baixa</option>
+    </select></div>
+    <button class="btn w" id="tG">Guardar</button>`);
+  el('tG').onclick = async () => {
+    const titulo = el('tT').value.trim(); if(!titulo) return aviso('Falta o título.');
+    const { error } = await sb.from('tarefas').insert({ titulo, dono:el('tD').value,
+      prazo:el('tP').value||null, prioridade:el('tR').value, criado_por:S.eu.id });
+    if(error) return aviso(error.message);
+    fechar(); router();
+  };
+}
+async function fecharTarefa(id){
+  const nota = prompt('Nota de fecho (opcional):') ?? '';
+  const { error } = await sb.from('tarefas').update({ estado:'feita', nota_fecho:nota||null,
+    concluida_em:new Date().toISOString() }).eq('id', id);
+  if(error) return aviso(error.message);
+  router();
+}
+
+/* ══════════════════════════════════════════════════════
+   2 · O MEU DIA
+   ══════════════════════════════════════════════════════ */
+async function vDia(){
+  const [{ data:hj }] = await Promise.all([
+    sb.from('v_hoje').select('*').eq('utilizador', S.eu.id).maybeSingle() ]);
+  await carregarContas();
+  const d = hj || { ligacoes:0, contactos_efectivos:0, visitas_marcadas:0, visitas_realizadas:0 };
+  const alvo = S.eu.alvo_ligacoes_dia || 9;
+  const fila = S.contas.filter(c => !['cliente','perdido'].includes(c.estado));
+
+  el('view').innerHTML = `
+  <div class="hd"><div><h1>O Meu Dia</h1>
+    <div class="sb">${dtl(hoje())}</div></div>
+    <button class="btn" id="bNova">+ Nova conta</button></div>
+
+  <div class="card dk">
+    <div class="big">${d.ligacoes} <span style="opacity:.45;font-size:23px">de ${alvo}</span></div>
+    <div class="lbl">ligações hoje</div>
+    <div class="bar"><i style="width:${Math.min(100,d.ligacoes/alvo*100)}%"></i></div>
+    <div style="display:flex;gap:26px;margin-top:15px">
+      <div><div style="font:700 20px/1.2 system-ui">${d.contactos_efectivos}</div>
+        <div class="lbl">atenderam</div></div>
+      <div><div style="font:700 20px/1.2 system-ui">${d.visitas_marcadas}</div>
+        <div class="lbl">visitas marcadas</div></div>
+      <div><div style="font:700 20px/1.2 system-ui">${d.visitas_realizadas}</div>
+        <div class="lbl">visitas feitas</div></div>
+    </div>
+  </div>
+
+  <div class="card"><h2>A fila de hoje · ${fila.length}</h2>
+    <div id="fila">${fila.length ? fila.map(linhaConta).join('')
+      : '<div class="empty">Nada na fila.<br>Carrega em <b>+ Nova conta</b>.</div>'}</div>
+  </div>`;
+
+  el('bNova').onclick = novaConta;
+  ligarLinhas();
+}
+
+const linhaConta = c => {
+  const t = TEMPS[c.temperatura] || TEMPS.cold;
+  const passo = c.sem_proximo_passo ? '⚠ sem próximo passo'
+    : (c.proximo_passo || ESTADOS[c.estado]) + (c.proxima_data ? ' · '+dt(c.proxima_data) : '');
+  return `<button class="row" data-c="${c.id}">
+    <span class="dot" style="background:${t.c}"></span>
+    <span class="in"><span class="t1">${esc(c.nome)}</span>
+      <span class="t2">${ESTADOS[c.estado]} · ${esc(passo)}</span></span>
+    ${c.atrasada?`<span class="warn">${c.dias_sem_contacto}d</span>`:''}
+    <span class="tag" style="color:${t.c};background:${t.f}">${t.t}</span></button>`;
+};
+const ligarLinhas = () => document.querySelectorAll('[data-c]').forEach(b =>
+  b.onclick = () => registar(b.dataset.c));
+
+/* ── registo de três segundos ── */
+const ACCOES = [
+  { k:'nao_atendeu',           i:'📵', t:'Não atendeu',               s:'Volta amanhã',        e:'em_contacto',    d:1 },
+  { k:'atendeu_marcou_visita', i:'📅', t:'Atendeu — marquei visita',  s:'Pede a data',         e:'visita_marcada', d:null },
+  { k:'atendeu_pensar',        i:'🤔', t:'Atendeu — ficou de pensar', s:'Volta em 3 dias',     e:'em_contacto',    d:3 },
+  { k:'atendeu_sem_interesse', i:'🚫', t:'Atendeu — sem interesse',   s:'Fecha a conta',       e:'perdido',        d:null },
+  { k:'pessoa_errada',         i:'🔀', t:'Pessoa errada',             s:'Volta amanhã',        e:'em_contacto',    d:1 },
+  { k:'visita_realizada',      i:'✅', t:'Visita realizada',          s:'Seguimento em 2 dias',e:'visita_feita',   d:2 },
+  { k:'proposta_apresentada',  i:'📄', t:'Proposta apresentada',      s:'Seguimento em 3 dias',e:'proposta',       d:3 },
+];
+const RANK = { alvo:0, em_contacto:1, visita_marcada:2, visita_feita:3, proposta:4 };
+
+function registar(id){
+  const c = S.contas.find(x => x.id === id); if(!c) return;
+  const tel = c.telefone || c.whatsapp;
+  abrir(`<div class="xh"><div><h3>${esc(c.nome)}</h3>
+      <div class="mini">${ESTADOS[c.estado]} · ${c.dias_sem_contacto}d sem contacto · ${esc(c.segmento||'—')}</div></div>
+      <button class="x" data-x>×</button></div>
+    ${tel?`<a class="btn d w" href="tel:${esc(tel)}">Ligar ${esc(tel)}</a>`
+         :`<div class="al am">Sem telefone registado.</div>`}
+    <div class="acts">${ACCOES.map(a=>`<button class="act" data-k="${a.k}">
+      <span class="ic">${a.i}</span><span>${a.t}<small>${a.s}</small></span></button>`).join('')}</div>
+    <div class="sp"></div>
+    <div class="f"><label>Nota desta conversa</label>
+      <textarea id="rN" style="min-height:62px" placeholder="disse para ligar dia 15…"></textarea></div>
+    <div class="g2">
+      <div class="f"><label>Próximo passo</label>
+        <input id="rP" value="${esc(c.proximo_passo||'')}" placeholder="Voltar a ligar"></div>
+      <div class="f"><label>Próximo contacto</label>
+        <input id="rD" type="date" value="${c.proxima_data||''}"></div>
+    </div>
+    <div class="g2">
+      <button class="btn g" id="rSo">Guardar só a nota</button>
+      <button class="btn g" id="rDorm">Dormir 30 dias</button>
+    </div>
+    <div class="sp"></div>
+    <a class="btn g w" href="#conta/${c.id}">Abrir ficha completa →</a>`);
+
+  const aplicar = async (mud, inter) => {
+    const nota = el('rN')?.value.trim() || null;
+    try{
+      if(inter){
+        const { error } = await sb.from('interacoes').insert({ conta_id:c.id, utilizador:S.eu.id,
+          tipo:inter.tipo, resultado:inter.resultado, nota });
+        if(error) throw error;
+      }
+      const { error:e2 } = await sb.from('contas').update(mud).eq('id', c.id);
+      if(e2) throw e2;
+      fechar(); router();
+    }catch(ex){
+      if(inter){ const f = fila(); f.push({ tabela:'interacoes', dados:{ conta_id:c.id,
+        utilizador:S.eu.id, tipo:inter.tipo, resultado:inter.resultado, nota } }); setFila(f); }
+      aviso('Sem rede. O registo ficou guardado e sincroniza sozinho.','am');
+      fechar();
+    }
+  };
+
+  document.querySelectorAll('[data-k]').forEach(b => b.onclick = async () => {
+    const a = ACCOES.find(x => x.k === b.dataset.k);
+    let estado = a.e, prox = a.d != null ? mais(a.d) : null, passo = a.s, extra = {};
+    if(a.k === 'atendeu_marcou_visita'){
+      const dd = prompt('Data da visita (AAAA-MM-DD):', el('rD').value || mais(2));
+      if(!dd) return; prox = dd; passo = 'Fazer a visita';
+    }
+    if(a.k === 'atendeu_sem_interesse'){
+      extra.motivo_perda = prompt('Numa palavra, porquê?') || 'sem interesse';
+      prox = null; passo = null;
+    }
+    if(RANK[estado] != null && RANK[c.estado] != null && RANK[estado] <= RANK[c.estado])
+      estado = c.estado;
+    await aplicar({ estado, proxima_data:prox, proximo_passo:passo,
+      ...(a.k==='visita_realizada'?{proximo_passo:'Seguimento da visita'}:{}),
+      ...extra },
+      { tipo: a.k==='visita_realizada'?'visita':a.k==='proposta_apresentada'?'reuniao':'ligacao',
+        resultado:a.k });
+  });
+  el('rSo').onclick = () => aplicar({ proximo_passo: el('rP').value.trim()||null,
+    proxima_data: el('rD').value||null }, { tipo:'outro', resultado:'outro' });
+  el('rDorm').onclick = () => aplicar({ estado:'dormente', proxima_data:mais(30),
+    proximo_passo:'Reactivar' }, null);
+}
+
+function novaConta(){
+  abrir(`<h3>Nova conta</h3>
+    <div class="f" style="margin-top:12px"><label>Nome do negócio</label>
+      <input id="cN" placeholder="Restaurante Uta Nhoxa"></div>
+    <div class="g2">
+      <div class="f"><label>Telefone</label><input id="cT" type="tel" inputmode="tel" placeholder="84…"></div>
+      <div class="f"><label>Dono</label><select id="cO">
+        ${S.equipa.map(p=>`<option value="${p.id}" ${p.id===S.eu.id?'selected':''}>${esc(p.nome)}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="g2">
+      <div class="f"><label>Segmento</label><select id="cS">
+        ${['Restaurante','Clínica','Serviços','Retalho','Outro'].map(s=>`<option>${s}</option>`).join('')}
+      </select></div>
+      <div class="f"><label>Origem</label><select id="cR">
+        <option value="hunting">Hunting</option><option value="inbound">Inbound</option>
+        <option value="indicacao">Indicação</option><option value="outbound">Outbound</option>
+        <option value="evento">Evento</option><option value="outro">Outro</option></select></div>
+    </div>
+    <button class="btn w" id="cG">Guardar</button>`);
+  el('cG').onclick = async () => {
+    const nome = el('cN').value.trim(); if(!nome) return aviso('Falta o nome.');
+    const { error } = await sb.from('contas').insert({ nome, telefone:el('cT').value.trim()||null,
+      segmento:el('cS').value, origem:el('cR').value, dono:el('cO').value, criado_por:S.eu.id,
+      estado:'alvo', proximo_passo:'Primeira ligação', proxima_data:hoje() });
+    if(error) return aviso(error.message);
+    fechar(); router();
+  };
+}
+
+/* ══════════════════════════════════════════════════════
+   3 · PIPELINE
+   ══════════════════════════════════════════════════════ */
+let filtro = { temp:'', dono:'', seg:'' };
+async function vPipeline(){
+  await carregarContas();
+  let cs = S.contas;
+  if(filtro.temp) cs = cs.filter(c => c.temperatura === filtro.temp);
+  if(filtro.dono) cs = cs.filter(c => c.dono === filtro.dono);
+  if(filtro.seg)  cs = cs.filter(c => c.segmento === filtro.seg);
+
+  const atrasadas = S.contas.filter(c => c.atrasada);
+  const sempasso  = S.contas.filter(c => c.sem_proximo_passo);
+  const segs = [...new Set(S.contas.map(c=>c.segmento).filter(Boolean))];
+
+  // série mensal de entradas
+  const porMes = {};
+  S.contas.forEach(c => { const m = (c.criado_em||'').slice(0,7); if(m) porMes[m]=(porMes[m]||0)+1; });
+  const mesesOrd = Object.keys(porMes).sort().slice(-6);
+
+  el('view').innerHTML = `
+  <div class="hd"><div><h1>Pipeline</h1>
+    <div class="sb">${S.contas.length} conta${S.contas.length===1?'':'s'} no total · ${cs.length} ${cs.length===1?'visível':'visíveis'}</div></div>
+    <button class="btn" id="bNova">+ Nova conta</button></div>
+
+  ${atrasadas.length?`<div class="al"><b>${atrasadas.length} ${atrasadas.length===1
+    ?'conta passou':'contas passaram'} do ponto de contacto.</b>
+    Ninguém ${atrasadas.length===1?'lhe':'lhes'} ligou dentro da cadência.</div>`:''}
+  ${sempasso.length?`<div class="al am"><b>${sempasso.length} ${sempasso.length===1
+    ?'conta sem próximo passo marcado':'contas sem próximo passo marcado'}.</b>
+    Enquanto não ${sempasso.length===1?'tiver':'tiverem'}, ninguém sabe o que fazer com ${sempasso.length===1?'ela':'elas'}.</div>`:''}
+  ${!atrasadas.length && !sempasso.length && S.contas.length
+    ?'<div class="al ok">Cadência em dia. Nada atrasado.</div>':''}
+
+  <div class="chips">
+    <button class="chip ${!filtro.temp&&!filtro.dono&&!filtro.seg?'on':''}" data-lim>Tudo</button>
+    ${Object.entries(TEMPS).filter(([k])=>!['cliente','perdido'].includes(k)).map(([k,v])=>
+      `<button class="chip ${filtro.temp===k?'on':''}" data-t="${k}">${v.t}</button>`).join('')}
+    ${S.equipa.map(p=>`<button class="chip ${filtro.dono===p.id?'on':''}" data-o="${p.id}">${esc(p.nome)}</button>`).join('')}
+    ${segs.map(s=>`<button class="chip ${filtro.seg===s?'on':''}" data-s="${esc(s)}">${esc(s)}</button>`).join('')}
+  </div>
+
+  <div class="kan">${FUNIL.map(e=>{
+    const n = cs.filter(c=>c.estado===e);
+    return `<div class="col"><h4><span>${ESTADOS[e]}</span><span>${n.length}</span></h4>
+      ${n.map(c=>{ const t=TEMPS[c.temperatura]||TEMPS.cold; return `
+        <button class="crd" data-c="${c.id}">
+          <div class="t1">${esc(c.nome)}</div>
+          <div class="t2">${esc(c.proximo_passo||'—')}${c.proxima_data?' · '+dt(c.proxima_data):''}</div>
+          <div style="margin-top:6px"><span class="tag" style="color:${t.c};background:${t.f}">${t.t}</span>
+          ${c.atrasada?`<span class="warn" style="margin-left:6px">${c.dias_sem_contacto}d</span>`:''}</div>
+        </button>`;}).join('')}
+    </div>`;}).join('')}</div>
+
+  <div class="card" style="margin-top:14px"><h2>Entradas por mês</h2>
+    ${mesesOrd.length?`<div class="fnl">${mesesOrd.map(m=>{
+      const topo = Math.max(...mesesOrd.map(x=>porMes[x]));
+      return `<div class="l"><span class="nm">${nomeMes(m+'-01')}</span>
+        <span class="tr"><i style="width:${porMes[m]/topo*100}%"></i></span>
+        <span class="v">${porMes[m]}</span></div>`;}).join('')}</div>`
+      :'<div class="empty">Sem dados.</div>'}
+  </div>
+
+  ${atrasadas.length?`<div class="card"><h2>Lista vermelha</h2>
+    ${atrasadas.slice(0,30).map(linhaConta).join('')}</div>`:''}`;
+
+  el('bNova').onclick = novaConta;
+  ligarLinhas();
+  el('view').querySelector('[data-lim]').onclick = () => { filtro={temp:'',dono:'',seg:''}; router(); };
+  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ filtro.temp = filtro.temp===b.dataset.t?'':b.dataset.t; router(); });
+  document.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{ filtro.dono = filtro.dono===b.dataset.o?'':b.dataset.o; router(); });
+  document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{ filtro.seg = filtro.seg===b.dataset.s?'':b.dataset.s; router(); });
+}
+
+/* ══════════════════════════════════════════════════════
+   4 · CONTA
+   ══════════════════════════════════════════════════════ */
+async function vConta(id){
+  const [{ data:c }, { data:ints }, { data:negs }, { data:cts }] = await Promise.all([
+    sb.from('v_contas').select('*').eq('id',id).maybeSingle(),
+    sb.from('interacoes').select('*').eq('conta_id',id).order('quando',{ascending:false}),
+    sb.from('negocios').select('*').eq('conta_id',id).order('criado_em'),
+    sb.from('contactos').select('*').eq('conta_id',id).order('nome'),
+  ]);
+  if(!c){ el('view').innerHTML = '<div class="al">Conta não encontrada.</div>'; return; }
+  const t = TEMPS[c.temperatura] || TEMPS.cold;
+  const lin = id2 => S.linhas.find(l=>l.id===id2)?.nome || '—';
+
+  el('view').innerHTML = `
+  <div class="hd"><div>
+    <h1>${esc(c.nome)}</h1>
+    <div class="sb">${ESTADOS[c.estado]} · ${esc(c.segmento||'—')} · ${esc(c.origem||'—')}
+      · dono ${esc(c.dono_nome||'—')}</div></div>
+    <div class="rt"><span class="tag" style="color:${t.c};background:${t.f}">${t.t}</span>
+    <button class="btn" id="bReg">Registar contacto</button></div></div>
+
+  <div class="kpis" style="margin-bottom:14px">
+    <div class="kpi"><div class="n">Sem contacto</div><div class="v">${c.dias_sem_contacto}d</div>
+      <div class="d ${c.atrasada?'dn':'fl'}">cadência ${c.cadencia_dias||'—'}d</div></div>
+    <div class="kpi"><div class="n">Toques</div><div class="v">${c.total_interacoes}</div>
+      <div class="d fl">${c.atendimentos} atenderam</div></div>
+    <div class="kpi"><div class="n">Próximo passo</div>
+      <div class="v" style="font-size:16px;line-height:1.35">${esc(c.proximo_passo||'—')}</div>
+      <div class="d ${c.sem_proximo_passo?'dn':'fl'}">${c.proxima_data?dt(c.proxima_data):'sem data'}</div></div>
+    <div class="kpi"><div class="n">LTV (fee)</div>
+      <div class="v">${MT((negs||[]).reduce((a,n)=>a+Number(n.tcv_fee||0),0))}</div>
+      <div class="d fl">CAC ${c.custo_aquisicao?MT(c.custo_aquisicao):'—'}</div></div>
+  </div>
+
+  <div class="g2">
+    <div class="card"><h2>Negócios <button class="btn sm g" id="bNeg">+ negócio</button></h2>
+      ${(negs||[]).length?`<div class="scr"><table><thead><tr>
+        <th>Negócio</th><th>Linha</th><th class="n">Fee/mês</th><th class="n">Meses</th>
+        <th class="n">TCV fee</th><th>Pago</th></tr></thead><tbody>
+        ${negs.map(n=>`<tr><td><b>${esc(n.nome)}</b></td><td>${esc(lin(n.linha_receita_id))}</td>
+          <td class="n">${MT(n.valor_fee)}</td><td class="n">${n.meses}</td>
+          <td class="n">${MT(n.tcv_fee)}</td>
+          <td>${n.data_pagamento?`<span style="color:var(--green);font-weight:700">${dt(n.data_pagamento)}</span>`
+            :`<button class="btn sm" data-pag="${n.id}">registar</button>`}</td></tr>`).join('')}
+      </tbody></table></div>`:'<div class="empty">Sem negócios.</div>'}
+    </div>
+
+    <div class="card"><h2>Contactos <button class="btn sm g" id="bCt">+ pessoa</button></h2>
+      ${(cts||[]).length?cts.map(x=>`<div class="row">
+        <span class="in"><span class="t1">${esc(x.nome)}${x.decisor?' ★':''}</span>
+          <span class="t2">${esc(x.cargo||'—')} · ${esc(x.telefone||'—')}</span></span>
+        ${x.telefone?`<a class="btn sm g" href="tel:${esc(x.telefone)}">ligar</a>`:''}
+      </div>`).join(''):'<div class="empty">Sem contactos.</div>'}
+      <div class="sp"></div>
+      <div class="f"><label>Notas da conta</label>
+        <textarea id="cNotas" style="min-height:70px">${esc(c.notas||'')}</textarea></div>
+      <button class="btn g sm" id="bNotas">Guardar notas</button>
+    </div>
+  </div>
+
+  <div class="card"><h2>Histórico · ${(ints||[]).length} interacções</h2>
+    ${(ints||[]).length?`<div class="tl">${ints.map(i=>`<div class="ev">
+      <div style="font-weight:700;font-size:13.5px">${esc((ACCOES.find(a=>a.k===i.resultado)||{}).t || i.resultado)}</div>
+      <div class="mini">${new Date(i.quando).toLocaleString('pt-PT',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
+        · ${esc(nomeDe(i.utilizador))}</div>
+      ${i.nota?`<div class="prose" style="font-size:13.5px;margin-top:4px">${esc(i.nota)}</div>`:''}
+    </div>`).join('')}</div>`:'<div class="empty">Ainda sem interacções.</div>'}
+  </div>`;
+
+  await carregarContas();
+  el('bReg').onclick = () => registar(id);
+  el('bNotas').onclick = async () => {
+    await sb.from('contas').update({ notas: el('cNotas').value }).eq('id', id);
+    aviso('Notas guardadas.','ok'); };
+  el('bNeg').onclick = () => novoNegocio(id);
+  el('bCt').onclick  = () => novoContacto(id);
+  document.querySelectorAll('[data-pag]').forEach(b => b.onclick = () => registarPagamento(b.dataset.pag, c));
+}
+
+function novoNegocio(conta_id){
+  abrir(`<h3>Novo negócio</h3>
+    <div class="f" style="margin-top:12px"><label>Nome</label>
+      <input id="nN" placeholder="Knowing Start + Ops Start"></div>
+    <div class="g2">
+      <div class="f"><label>Linha de receita</label><select id="nL">
+        <option value="">—</option>
+        ${S.linhas.map(l=>`<option value="${l.id}">${esc(l.nome)}</option>`).join('')}</select></div>
+      <div class="f"><label>Meses</label><input id="nM" type="number" value="3" min="1"></div>
+    </div>
+    <div class="g2">
+      <div class="f"><label>Fee por mês (MT)</label><input id="nF" type="number" inputmode="numeric"></div>
+      <div class="f"><label>Verba de anúncios total (MT)</label><input id="nV" type="number" inputmode="numeric"></div>
+    </div>
+    <div class="al am">O <b>fee</b> é dinheiro da V3. A <b>verba</b> é dinheiro do cliente para anúncios.
+      Nunca se somam como receita.</div>
+    <button class="btn w" id="nG">Guardar</button>`);
+  el('nG').onclick = async () => {
+    const nome = el('nN').value.trim(); if(!nome) return aviso('Falta o nome.');
+    const { error } = await sb.from('negocios').insert({ conta_id, nome,
+      linha_receita_id: el('nL').value||null, meses:Number(el('nM').value)||1,
+      valor_fee:Number(el('nF').value)||0, valor_verba:Number(el('nV').value)||0, dono:S.eu.id });
+    if(error) return aviso(error.message);
+    fechar(); router();
+  };
+}
+
+function registarPagamento(id, conta){
+  const primeiro = conta.estado !== 'cliente';
+  abrir(`<h3>Registar pagamento</h3>
+    <div class="al ok">Só depois disto é que isto conta como <b>venda</b>.
+      Contrato assinado sem pagamento não é venda.</div>
+    <div class="f"><label>Data do pagamento</label><input id="gD" type="date" value="${hoje()}"></div>
+    ${primeiro?`<div class="f"><label>Quanto custou trazer este cliente? (CAC, MT)</label>
+      <input id="gC" type="number" inputmode="numeric" placeholder="0 se veio de indicação"></div>
+      <div class="f"><label>Quem indicou (se aplicável)</label><select id="gI">
+        <option value="">—</option>
+        ${S.contas.filter(c=>c.id!==conta.id).map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('')}
+      </select></div>`:''}
+    <button class="btn w" id="gG">Confirmar pagamento</button>`);
+  el('gG').onclick = async () => {
+    const { error } = await sb.from('negocios')
+      .update({ data_pagamento: el('gD').value, estado:'ganho' }).eq('id', id);
+    if(error) return aviso(error.message);
+    const mud = { estado:'cliente', proximo_passo:'Onboarding', proxima_data:mais(2) };
+    if(primeiro){
+      const cac = el('gC').value; if(cac !== '') mud.custo_aquisicao = Number(cac);
+      if(el('gI').value) mud.indicado_por = el('gI').value;
+    }
+    await sb.from('contas').update(mud).eq('id', conta.id);
+    fechar(); aviso('Venda registada.','ok'); router();
+  };
+}
+
+function novoContacto(conta_id){
+  abrir(`<h3>Nova pessoa</h3>
+    <div class="f" style="margin-top:12px"><label>Nome</label><input id="kN"></div>
+    <div class="g2"><div class="f"><label>Cargo</label><input id="kC"></div>
+      <div class="f"><label>Telefone</label><input id="kT" type="tel"></div></div>
+    <label class="rt" style="text-transform:none;font-size:14px;font-weight:600;color:var(--text)">
+      <input type="checkbox" id="kD" style="width:auto"> É quem decide</label>
+    <div class="sp"></div><button class="btn w" id="kG">Guardar</button>`);
+  el('kG').onclick = async () => {
+    const nome = el('kN').value.trim(); if(!nome) return aviso('Falta o nome.');
+    const { error } = await sb.from('contactos').insert({ conta_id, nome,
+      cargo:el('kC').value||null, telefone:el('kT').value||null, decisor:el('kD').checked });
+    if(error) return aviso(error.message);
+    fechar(); router();
+  };
+}
+
+/* ══════════════════════════════════════════════════════
+   5 · COMPROMISSOS
+   ══════════════════════════════════════════════════════ */
+async function vCompromissos(){
+  const { data:cps } = await sb.from('v_compromissos').select('*').eq('semana', S.semana);
+  const porPessoa = {};
+  (cps||[]).forEach(c => { (porPessoa[c.utilizador] = porPessoa[c.utilizador] || []).push(c); });
+
+  el('view').innerHTML = `
+  <div class="hd"><div><h1>Compromissos</h1>
+    <div class="sb">Semana de ${dtl(S.semana)}</div></div>
+    <div class="rt">
+      <button class="btn g sm" id="bAnt">←</button>
+      <button class="btn g sm" id="bSeg">→</button>
+      ${ceo()?'<button class="btn" id="bNovo">+ compromisso</button>':''}
+    </div></div>
+
+  ${!(cps||[]).length?`<div class="card"><div class="empty">
+    Sem compromissos nesta semana.<br>
+    ${ceo()?'Define o que esperas de cada um.':'O Cyber ainda não definiu.'}</div></div>`:''}
+
+  ${S.equipa.map(p => {
+    const lista = porPessoa[p.id] || []; if(!lista.length) return '';
+    const med = lista.filter(c=>c.desempenho!=null);
+    const total = med.length ? med.reduce((a,c)=>a+Math.min(1,Number(c.desempenho)),0)/med.length : null;
+    return `<div class="card"><h2>${esc(p.nome)}
+      <span style="color:${total==null?'var(--muted)':total>=1?'var(--green)':total>=.8?'var(--amber)':'var(--red)'}">
+        ${total==null?'':pc(total)}</span></h2>
+      <div class="scr"><table><thead><tr><th>Compromisso</th><th class="n">Alvo</th>
+        <th class="n">Feito</th><th class="n">%</th><th>Estado</th><th></th></tr></thead><tbody>
+        ${lista.map(c=>{
+          const cor = c.veredicto==='cumprido'?'var(--green)':c.veredicto==='perto'?'var(--amber)':'var(--red)';
+          return `<tr>
+          <td><b>${esc(c.titulo)}</b>${c.tipo==='manual'?' <span class="mini">· manual</span>':
+            ` <span class="mini">· ${METRICAS[c.metrica]||c.metrica}</span>`}
+            ${c.nota?`<div class="mini" style="margin-top:3px">“${esc(c.nota)}”</div>`:''}</td>
+          <td class="n">${MT(c.alvo)}</td><td class="n"><b>${MT(c.realizado)}</b></td>
+          <td class="n" style="color:${cor};font-weight:800">${c.desempenho!=null?pc(c.desempenho):'—'}</td>
+          <td><span class="tag" style="color:${cor};background:${cor}1a">${c.veredicto}</span></td>
+          <td class="n">${c.tipo==='manual' && (c.utilizador===S.eu.id||ceo())
+            ? `<button class="btn sm g" data-mn="${c.id}" data-on="${c.concluido?1:0}">${c.concluido?'reabrir':'feito'}</button>`:''}</td>
+        </tr>`;}).join('')}
+      </tbody></table></div></div>`;}).join('')}`;
+
+  el('bAnt').onclick = () => { S.semana = segunda(new Date(new Date(S.semana).getTime()-6048e5)); router(); };
+  el('bSeg').onclick = () => { S.semana = segunda(new Date(new Date(S.semana).getTime()+6048e5)); router(); };
+  if(ceo()) el('bNovo').onclick = novoCompromisso;
+  document.querySelectorAll('[data-mn]').forEach(b => b.onclick = async () => {
+    const on = b.dataset.on === '1';
+    const nota = on ? null : (prompt('Se não foi feito, porquê? (deixa vazio se foi feito)') || null);
+    await sb.from('compromissos').update({ concluido:!on, nota,
+      realizado_manual: !on ? null : 0 }).eq('id', b.dataset.mn);
+    router(); });
+}
+
+function novoCompromisso(){
+  abrir(`<h3>Novo compromisso</h3>
+    <div class="mini">Semana de ${dtl(S.semana)}</div>
+    <div class="f" style="margin-top:12px"><label>Para quem</label><select id="mU">
+      ${S.equipa.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join('')}</select></div>
+    <div class="f"><label>O quê</label><input id="mT" placeholder="Ligações feitas"></div>
+    <div class="g2">
+      <div class="f"><label>Tipo</label><select id="mP">
+        <option value="contavel">Contável — conta-se sozinho</option>
+        <option value="manual">Manual — marca-se à mão</option></select></div>
+      <div class="f"><label>Alvo</label><input id="mA" type="number" value="0"></div>
+    </div>
+    <div class="f" id="mMw"><label>Métrica a contar</label><select id="mM">
+      ${Object.entries(METRICAS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div>
+    <div class="al am">Os contáveis preenchem-se sozinhos a partir dos registos. Ninguém reporta nada.</div>
+    <button class="btn w" id="mG">Guardar</button>`);
+  el('mP').onchange = () => { el('mMw').hidden = el('mP').value === 'manual'; };
+  el('mG').onclick = async () => {
+    const titulo = el('mT').value.trim(); if(!titulo) return aviso('Falta o título.');
+    const tipo = el('mP').value;
+    const { error } = await sb.from('compromissos').insert({ semana:S.semana,
+      utilizador:el('mU').value, titulo, tipo, metrica: tipo==='contavel'?el('mM').value:null,
+      alvo:Number(el('mA').value)||0, criado_por:S.eu.id });
+    if(error) return aviso(error.message);
+    fechar(); router();
+  };
+}
+
+/* ══════════════════════════════════════════════════════
+   6 · WBR
+   ══════════════════════════════════════════════════════ */
+async function vWbr(){
+  const sem = segunda(new Date(new Date(S.semana).getTime()-6048e5)); // a semana que passou
+  const [{ data:ws }, { data:semd }, { data:ven }, { data:cps }] = await Promise.all([
+    sb.from('wbr').select('*').eq('semana', sem).limit(1),
+    sb.from('v_semana').select('*').eq('semana', sem),
+    sb.from('v_vendas').select('*').eq('semana', sem),
+    sb.from('v_compromissos').select('*').eq('semana', sem),
+  ]);
+  let w = ws?.[0], fcas = [];
+  if(w){ const { data } = await sb.from('wbr_fca').select('*').eq('wbr_id', w.id).order('criado_em');
+    fcas = data || []; }
+  const desvios = (cps||[]).filter(c => c.desempenho != null && Number(c.desempenho) < 1);
+
+  el('view').innerHTML = `
+  <div class="hd"><div><h1>WBR</h1>
+    <div class="sb">Semana de ${dtl(sem)} · ${w?.fechado?'fechada':'aberta'}</div></div>
+    <div class="rt">
+      <button class="btn g sm" id="bAnt">←</button><button class="btn g sm" id="bSeg">→</button>
+      ${w?`<button class="btn g" id="bFechar">${w.fechado?'Reabrir':'Fechar WBR'}</button>`:''}
+    </div></div>
+
+  <div class="card"><h2>Os números da semana</h2>
+    <div class="scr"><table><thead><tr><th>Pessoa</th><th class="n">Ligações</th>
+      <th class="n">Atenderam</th><th class="n">Marcadas</th><th class="n">Realizadas</th>
+      <th class="n">Propostas</th><th class="n">Vendas pagas</th></tr></thead><tbody>
+      ${S.equipa.map(p=>{
+        const s = (semd||[]).find(x=>x.utilizador===p.id) || {};
+        const v = (ven||[]).find(x=>x.utilizador===p.id) || {};
+        return `<tr><td><b>${esc(p.nome)}</b></td>
+          <td class="n">${s.ligacoes||0}</td><td class="n">${s.contactos_efectivos||0}</td>
+          <td class="n">${s.visitas_marcadas||0}</td><td class="n">${s.visitas_realizadas||0}</td>
+          <td class="n">${s.propostas||0}</td>
+          <td class="n"><b>${v.vendas_pagas||0}</b></td></tr>`;}).join('')}
+    </tbody></table></div>
+  </div>
+
+  ${desvios.length?`<div class="card"><h2>Desvios — ${desvios.length}</h2>
+    <div class="scr"><table><thead><tr><th>Pessoa</th><th>Compromisso</th><th class="n">Alvo</th>
+      <th class="n">Feito</th><th class="n">%</th><th></th></tr></thead><tbody>
+      ${desvios.map(d=>`<tr><td>${esc(d.pessoa)}</td><td><b>${esc(d.titulo)}</b></td>
+        <td class="n">${MT(d.alvo)}</td><td class="n">${MT(d.realizado)}</td>
+        <td class="n" style="color:var(--red);font-weight:800">${pc(d.desempenho)}</td>
+        <td class="n"><button class="btn sm" data-fca='${esc(JSON.stringify({
+          indicador:d.titulo, pessoa:d.utilizador, alvo:d.alvo, realizado:d.realizado }))}'>FCA</button></td>
+      </tr>`).join('')}
+    </tbody></table></div></div>`
+  :'<div class="al ok">Sem desvios nos compromissos desta semana.</div>'}
+
+  <div class="card"><h2>Facto · Causa · Acção
+    <button class="btn sm g" id="bFca">+ FCA livre</button></h2>
+    <div class="al am">«Falta de foco» e «não tive tempo» são sintomas, não causas.
+      <b>Causa é aquilo que, se mudar, o número muda.</b></div>
+    ${fcas.length?fcas.map(f=>`
+      <div style="border:1px solid var(--line);border-radius:12px;padding:13px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:start">
+          <b>${esc(f.indicador)}</b>
+          <span class="tag" style="background:${f.estado==='feita'?'#D1FAE5':'#FEF3C7'};
+            color:${f.estado==='feita'?'var(--green)':'var(--amber)'}">${f.estado}</span></div>
+        <div style="margin-top:8px;font-size:13.5px">
+          <div><b>Facto:</b> ${esc(f.facto)}</div>
+          <div style="margin-top:3px"><b>Causa:</b> ${esc(f.causa)||'<span class="mini">por identificar</span>'}</div>
+          <div style="margin-top:3px"><b>Acção:</b> ${esc(f.accao)||'—'}
+            ${f.dono?` · ${esc(nomeDe(f.dono))}`:''}${f.prazo?` · ${dt(f.prazo)}`:''}</div>
+        </div>
+        <div class="rt" style="margin-top:9px">
+          <button class="btn sm g" data-edf="${f.id}">editar</button>
+          ${f.estado!=='feita'?`<button class="btn sm g" data-okf="${f.id}">marcar feita</button>`:''}
+        </div>
+      </div>`).join(''):'<div class="empty">Sem FCA registado nesta semana.</div>'}
+  </div>
+
+  <div class="card"><h2>Notas da reunião</h2>
+    <textarea id="wN" style="min-height:110px">${esc(w?.notas||'')}</textarea>
+    <div style="margin-top:10px"><button class="btn g" id="bNotas">Guardar notas</button></div>
+  </div>`;
+
+  const garantirWbr = async () => {
+    if(w) return w.id;
+    const { data, error } = await sb.from('wbr')
+      .insert({ semana:sem, criado_por:S.eu.id }).select('id').single();
+    if(error){ aviso(error.message); return null; }
+    w = data; return data.id;
+  };
+
+  el('bAnt').onclick = () => { S.semana = segunda(new Date(new Date(S.semana).getTime()-6048e5)); router(); };
+  el('bSeg').onclick = () => { S.semana = segunda(new Date(new Date(S.semana).getTime()+6048e5)); router(); };
+  if(w) el('bFechar').onclick = async () => {
+    await sb.from('wbr').update({ fechado:!w.fechado }).eq('id', w.id); router(); };
+  el('bNotas').onclick = async () => {
+    const id = await garantirWbr(); if(!id) return;
+    await sb.from('wbr').update({ notas: el('wN').value }).eq('id', id);
+    aviso('Notas guardadas.','ok'); };
+  el('bFca').onclick = async () => { const id = await garantirWbr(); if(id) editorFca(id, null, {}); };
+  document.querySelectorAll('[data-fca]').forEach(b => b.onclick = async () => {
+    const id = await garantirWbr(); if(id) editorFca(id, null, JSON.parse(b.dataset.fca)); });
+  document.querySelectorAll('[data-edf]').forEach(b => b.onclick = () =>
+    editorFca(w.id, fcas.find(f=>f.id===b.dataset.edf), {}));
+  document.querySelectorAll('[data-okf]').forEach(b => b.onclick = async () => {
+    await sb.from('wbr_fca').update({ estado:'feita' }).eq('id', b.dataset.okf); router(); });
+}
+
+function editorFca(wbr_id, f, pre){
+  const o = f || pre || {};
+  abrir(`<h3>${f?'Editar':'Novo'} FCA</h3>
+    <div class="f" style="margin-top:12px"><label>Indicador</label>
+      <input id="fI" value="${esc(o.indicador||'')}"></div>
+    <div class="g2"><div class="f"><label>Alvo</label>
+      <input id="fA" type="number" value="${o.alvo??''}"></div>
+      <div class="f"><label>Realizado</label><input id="fR" type="number" value="${o.realizado??''}"></div></div>
+    <div class="f"><label>Facto — o que aconteceu, em números</label>
+      <textarea id="fF" style="min-height:58px">${esc(o.facto|| (o.alvo!=null?`${o.realizado} de ${o.alvo}`:''))}</textarea></div>
+    <div class="f"><label>Causa — o que, se mudar, muda o número</label>
+      <textarea id="fC" style="min-height:58px">${esc(o.causa||'')}</textarea></div>
+    <div class="f"><label>Acção</label><textarea id="fAc" style="min-height:58px">${esc(o.accao||'')}</textarea></div>
+    <div class="g2">
+      <div class="f"><label>Dono</label><select id="fD"><option value="">—</option>
+        ${S.equipa.map(p=>`<option value="${p.id}" ${o.dono===p.id?'selected':''}>${esc(p.nome)}</option>`).join('')}
+      </select></div>
+      <div class="f"><label>Prazo</label><input id="fP" type="date" value="${o.prazo||mais(7)}"></div>
+    </div>
+    <button class="btn w" id="fG">Guardar</button>`);
+  el('fG').onclick = async () => {
+    const facto = el('fF').value.trim(); if(!facto) return aviso('O facto é obrigatório.');
+    const corpo = { wbr_id, indicador:el('fI').value.trim()||'—',
+      pessoa:o.pessoa||null, alvo:el('fA').value?Number(el('fA').value):null,
+      realizado:el('fR').value?Number(el('fR').value):null, facto,
+      causa:el('fC').value.trim()||null, accao:el('fAc').value.trim()||null,
+      dono:el('fD').value||null, prazo:el('fP').value||null };
+    const { error } = f ? await sb.from('wbr_fca').update(corpo).eq('id', f.id)
+                        : await sb.from('wbr_fca').insert(corpo);
+    if(error) return aviso(error.message);
+    fechar(); router();
+  };
+}
+
+/* ══════════════════════════════════════════════════════
+   7 · MÉTRICAS
+   ══════════════════════════════════════════════════════ */
+async function vMetricas(){
+  const [{ data:rec }, { data:nps }, { data:cac }, { data:fun }, { data:ven }, { data:negs }] =
+    await Promise.all([
+      sb.from('v_receita').select('*').order('mes'),
+      sb.from('v_nps').select('*').maybeSingle(),
+      sb.from('v_cac').select('*').order('mes'),
+      sb.from('v_funil').select('*'),
+      sb.from('v_vendas').select('*').eq('mes', S.mes),
+      sb.from('negocios').select('conta_id,tcv_fee,data_pagamento').not('data_pagamento','is',null),
+    ]);
+  await carregarContas();
+  const r  = (rec||[]).find(x=>x.mes===S.mes) || (rec||[]).slice(-1)[0] || {};
+  const ca = (cac||[]).find(x=>x.mes===S.mes) || {};
+  const mapaF = Object.fromEntries((fun||[]).map(f=>[f.estado,f.contas]));
+  const topo = Math.max(1, ...FUNIL.map(e=>mapaF[e]||0));
+  const factMes = (ven||[]).reduce((a,x)=>a+Number(x.tcv_fee||0),0);
+
+  // LTV médio por cliente
+  const porConta = {};
+  (negs||[]).forEach(n => porConta[n.conta_id] = (porConta[n.conta_id]||0) + Number(n.tcv_fee||0));
+  const vals = Object.values(porConta);
+  const ltv = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+  const cacV = Number(ca.cac_midia || ca.cac_declarado_medio || 0);
+
+  const k = (n,v,d,cls='fl') => `<div class="kpi"><div class="n">${n}</div><div class="v">${v}</div>
+    <div class="d ${cls}">${d||''}</div></div>`;
+  const seta = x => x == null ? 'fl' : Number(x) > 0 ? 'up' : Number(x) < 0 ? 'dn' : 'fl';
+
+  el('view').innerHTML = `
+  <div class="hd"><div><h1>Métricas</h1>
+    <div class="sb">${nomeMes(S.mes)} · cada secção tem um dono</div></div></div>
+
+  <div class="sec">Comercial · Cyber</div>
+  <div class="kpis">
+    ${k('Facturação do mês', MT(factMes)+' MT', 'fee recebido')}
+    ${k('Vendas pagas', (ven||[]).reduce((a,x)=>a+Number(x.vendas_pagas||0),0), 'com pagamento')}
+    ${k('Contas no pipeline', S.contas.filter(c=>!['cliente','perdido'].includes(c.estado)).length,
+        S.contas.filter(c=>c.atrasada).length+' atrasadas',
+        S.contas.filter(c=>c.atrasada).length?'dn':'up')}
+    ${k('Taxa de conversão', mapaF.alvo?pc((mapaF.cliente||0)/(mapaF.alvo||1)):'—','alvo → cliente')}
+  </div>
+  <div class="card" style="margin-top:12px"><h2>O funil</h2>
+    <div class="fnl">${FUNIL.map((e,i)=>{
+      const n = mapaF[e]||0, ant = i?mapaF[FUNIL[i-1]]||0:0;
+      return `<div class="l"><span class="nm">${ESTADOS[e]}</span>
+        <span class="tr"><i style="width:${n/topo*100}%"></i></span>
+        <span class="v">${n}${i&&ant?` <span class="mini">${pc(n/ant)}</span>`:''}</span></div>`;}).join('')}
+    </div></div>
+
+  <div class="sec">Marketing · Aires</div>
+  <div class="kpis">
+    ${k('Gasto de mídia', MT(ca.gasto_midia||0)+' MT', nomeMes(S.mes))}
+    ${k('CAC', ca.cac_midia?MT(ca.cac_midia)+' MT':'—', 'por cliente novo')}
+    ${k('CAC declarado', ca.cac_declarado_medio?MT(ca.cac_declarado_medio)+' MT':'—','média')}
+    ${k('LTV / CAC', cacV?(ltv/cacV).toFixed(1):'—', cacV?(ltv/cacV>=3?'saudável':'abaixo de 3'):'sem CAC',
+        cacV?(ltv/cacV>=3?'up':'dn'):'fl')}
+  </div>
+  <div class="card" style="margin-top:12px"><h2>Leads por origem</h2>
+    <div class="fnl">${(() => {
+      const o = {}; S.contas.forEach(c=>{ const x=c.origem||'outro'; o[x]=(o[x]||0)+1; });
+      const t = Math.max(1,...Object.values(o));
+      return Object.entries(o).sort((a,b)=>b[1]-a[1]).map(([x,n])=>`<div class="l">
+        <span class="nm">${esc(ORIGENS[x]||x)}</span><span class="tr"><i style="width:${n/t*100}%"></i></span>
+        <span class="v">${n}</span></div>`).join('');})()}</div></div>
+
+  <div class="sec">Operações · Nélio</div>
+  <div class="kpis">
+    ${k('MRR', MT(r.mrr||0)+' MT', 'receita recorrente')}
+    ${k('Crescimento', r.crescimento!=null?pc(r.crescimento):'—','face ao mês anterior', seta(r.crescimento))}
+    ${k('NRR', r.nrr!=null?pc(r.nrr):'—', r.nrr>=1?'a crescer na base':'a encolher',
+        r.nrr!=null?(r.nrr>=1?'up':'dn'):'fl')}
+    ${k('GRR', r.grr!=null?pc(r.grr):'—','retenção bruta', r.grr!=null?(r.grr>=.85?'up':'dn'):'fl')}
+    ${k('Clientes activos', r.clientes_activos||0, (r.clientes_novos||0)+' novos')}
+    ${k('Perdidos', r.clientes_perdidos||0, r.taxa_churn!=null?pc(r.taxa_churn)+' de churn':'',
+        r.clientes_perdidos?'dn':'up')}
+    ${k('Expansão', MT(r.expansao||0)+' MT','upsell na base', r.expansao?'up':'fl')}
+    ${k('NPS', nps?.nps!=null?nps.nps:'—',
+        nps?`${nps.promotores}P · ${nps.passivos}N · ${nps.detractores}D`:'sem respostas',
+        nps?.nps>=50?'up':nps?.nps<0?'dn':'fl')}
+  </div>
+
+  <div class="card" style="margin-top:12px"><h2>Movimento da receita, mês a mês</h2>
+    <div class="scr"><table><thead><tr><th>Mês</th><th class="n">MRR</th><th class="n">Novo</th>
+      <th class="n">Expansão</th><th class="n">Contracção</th><th class="n">Churn</th>
+      <th class="n">GRR</th><th class="n">NRR</th><th class="n">Cresc.</th></tr></thead><tbody>
+      ${(rec||[]).slice(-12).reverse().map(x=>`<tr>
+        <td><b>${nomeMes(x.mes)}</b></td><td class="n">${MT(x.mrr)}</td>
+        <td class="n" style="color:var(--green)">${x.novo?'+'+MT(x.novo):'—'}</td>
+        <td class="n" style="color:var(--green)">${x.expansao?'+'+MT(x.expansao):'—'}</td>
+        <td class="n" style="color:var(--amber)">${x.contracao?'−'+MT(x.contracao):'—'}</td>
+        <td class="n" style="color:var(--red)">${x.churn?'−'+MT(x.churn):'—'}</td>
+        <td class="n">${x.grr!=null?pc(x.grr):'—'}</td><td class="n">${x.nrr!=null?pc(x.nrr):'—'}</td>
+        <td class="n ${seta(x.crescimento)}">${x.crescimento!=null?pc(x.crescimento):'—'}</td>
+      </tr>`).join('') || '<tr><td colspan="9" class="empty">Sem dados ainda.</td></tr>'}
+    </tbody></table></div>
+  </div>
+
+  <div class="card"><h2>Gasto de mídia <button class="btn sm g" id="bMidia">+ gasto</button></h2>
+    <div class="scr"><table><thead><tr><th>Mês</th><th class="n">Gasto</th>
+      <th class="n">Clientes novos</th><th class="n">CAC</th></tr></thead><tbody>
+      ${(cac||[]).slice(-12).reverse().map(x=>`<tr><td>${nomeMes(x.mes)}</td>
+        <td class="n">${MT(x.gasto_midia)}</td><td class="n">${x.clientes_novos}</td>
+        <td class="n"><b>${x.cac_midia?MT(x.cac_midia):'—'}</b></td></tr>`).join('')
+        || '<tr><td colspan="4" class="empty">Sem gastos registados.</td></tr>'}
+    </tbody></table></div>
+  </div>`;
+
+  el('bMidia').onclick = () => {
+    abrir(`<h3>Registar gasto de mídia</h3>
+      <div class="al am">Só a mídia que a <b>V3 paga para a V3</b>. A verba dos clientes não entra aqui.</div>
+      <div class="g2"><div class="f"><label>Data</label><input id="xD" type="date" value="${hoje()}"></div>
+        <div class="f"><label>Plataforma</label><input id="xP" value="Meta"></div></div>
+      <div class="f"><label>Valor (MT)</label><input id="xV" type="number" inputmode="numeric"></div>
+      <div class="f"><label>Nota</label><input id="xN"></div>
+      <button class="btn w" id="xG">Guardar</button>`);
+    el('xG').onclick = async () => {
+      const v = Number(el('xV').value); if(!v) return aviso('Falta o valor.');
+      const { error } = await sb.from('gastos_midia').insert({ data:el('xD').value,
+        plataforma:el('xP').value||'Meta', valor:v, nota:el('xN').value||null, criado_por:S.eu.id });
+      if(error) return aviso(error.message);
+      fechar(); router(); };
+  };
+}
+
+/* ══════════════════════════════════════════════════════
+   8 · CLIENTES
+   ══════════════════════════════════════════════════════ */
+async function vClientes(){
+  await carregarContas();
+  const cls = S.contas.filter(c => c.estado === 'cliente');
+  const ids = cls.map(c=>c.id);
+  const [{ data:negs }, { data:nps }, { data:deps }] = await Promise.all([
+    ids.length ? sb.from('negocios').select('*').in('conta_id', ids) : {data:[]},
+    ids.length ? sb.from('nps').select('*').in('conta_id', ids).order('data',{ascending:false}) : {data:[]},
+    ids.length ? sb.from('depoimentos').select('*').in('conta_id', ids) : {data:[]},
+  ]);
+  const npsDe = id => (nps||[]).find(n=>n.conta_id===id);
+  const negDe = id => (negs||[]).filter(n=>n.conta_id===id);
+
+  el('view').innerHTML = `
+  <div class="hd"><div><h1>Clientes</h1>
+    <div class="sb">${cls.length} activos</div></div></div>
+  ${cls.length ? cls.map(c => {
+    const ns = negDe(c.id);
+    const tcv = ns.reduce((a,n)=>a+Number(n.tcv_fee||0),0);
+    const pago = ns.filter(n=>n.data_pagamento).reduce((a,n)=>a+Number(n.tcv_fee||0),0);
+    const n = npsDe(c.id);
+    const dep = (deps||[]).find(d=>d.conta_id===c.id);
+    return `<div class="card">
+      <h2>${esc(c.nome)}
+        <span class="rt">
+          <button class="btn sm g" data-nps="${c.id}">NPS</button>
+          <button class="btn sm g" data-dep="${c.id}">depoimento</button>
+          <a class="btn sm g" href="#conta/${c.id}">abrir</a></span></h2>
+      <div class="kpis">
+        <div class="kpi"><div class="n">LTV (fee)</div><div class="v">${MT(tcv)}</div>
+          <div class="d fl">${ns.length} negócio${ns.length===1?'':'s'}</div></div>
+        <div class="kpi"><div class="n">Já pago</div><div class="v">${MT(pago)}</div>
+          <div class="d ${pago>=tcv?'up':'fl'}">${tcv?pc(pago/tcv):'—'}</div></div>
+        <div class="kpi"><div class="n">CAC</div><div class="v">${c.custo_aquisicao!=null?MT(c.custo_aquisicao):'—'}</div>
+          <div class="d fl">${c.origem==='indicacao'?'veio por indicação':esc(c.origem||'')}</div></div>
+        <div class="kpi"><div class="n">NPS</div><div class="v">${n?n.nota:'—'}</div>
+          <div class="d ${n?(n.nota>=9?'up':n.nota<=6?'dn':'fl'):'fl'}">
+            ${n?(n.nota>=9?'promotor':n.nota<=6?'detractor':'passivo'):'por perguntar'}</div></div>
+        <div class="kpi"><div class="n">Depoimento</div><div class="v">${dep?'✓':'—'}</div>
+          <div class="d fl">${dep?(dep.autorizado?'autorizado':'por autorizar'):'por pedir'}</div></div>
+      </div>
+      ${n?.comentario?`<div class="prose" style="margin-top:11px;font-size:13.5px">“${esc(n.comentario)}”</div>`:''}
+    </div>`;}).join('')
+    : '<div class="card"><div class="empty">Ainda sem clientes.<br>Um negócio só vira cliente quando o pagamento é registado.</div></div>'}`;
+
+  document.querySelectorAll('[data-nps]').forEach(b => b.onclick = () => {
+    const id = b.dataset.nps;
+    abrir(`<h3>Registar NPS</h3>
+      <p class="mini">«De 0 a 10, qual a probabilidade de nos recomendar a um colega?»</p>
+      <div class="f" style="margin-top:12px"><label>Nota (0 a 10)</label>
+        <input id="pN" type="number" min="0" max="10"></div>
+      <div class="f"><label>Comentário</label><textarea id="pC" style="min-height:70px"></textarea></div>
+      <button class="btn w" id="pG">Guardar</button>`);
+    el('pG').onclick = async () => {
+      const nota = Number(el('pN').value);
+      if(!(nota>=0 && nota<=10)) return aviso('A nota tem de ser entre 0 e 10.');
+      const { error } = await sb.from('nps').insert({ conta_id:id, nota,
+        comentario:el('pC').value||null, recolhido_por:S.eu.id });
+      if(error) return aviso(error.message);
+      fechar(); router(); };
+  });
+  document.querySelectorAll('[data-dep]').forEach(b => b.onclick = () => {
+    const id = b.dataset.dep;
+    abrir(`<h3>Registar depoimento</h3>
+      <div class="f" style="margin-top:12px"><label>Texto</label>
+        <textarea id="dT" style="min-height:100px"></textarea></div>
+      <div class="f"><label>Quem disse</label><input id="dA"></div>
+      <label class="rt" style="text-transform:none;font-size:14px;font-weight:600;color:var(--text)">
+        <input type="checkbox" id="dOk" style="width:auto"> Autorizou a usarmos publicamente</label>
+      <div class="sp"></div><button class="btn w" id="dG">Guardar</button>`);
+    el('dG').onclick = async () => {
+      const texto = el('dT').value.trim(); if(!texto) return aviso('Falta o texto.');
+      const { error } = await sb.from('depoimentos').insert({ conta_id:id, texto,
+        autor:el('dA').value||null, autorizado:el('dOk').checked, criado_por:S.eu.id });
+      if(error) return aviso(error.message);
+      fechar(); router(); };
+  });
+}
+
+/* ═══════════ folhas ═══════════ */
+function abrir(html, cls=''){
+  el('sheet').hidden = false;
+  el('sheetbox').className = 'box ' + cls;
+  el('sheetbox').innerHTML = html;
+  el('sheetbox').querySelectorAll('[data-x]').forEach(b => b.onclick = fechar);
+}
+function fechar(){ el('sheet').hidden = true; el('sheetbox').innerHTML = ''; }
+el('sheet').onclick = e => { if(e.target.id === 'sheet') fechar(); };
+document.addEventListener('keydown', e => { if(e.key === 'Escape') fechar(); });
+
+ligarLogin();
+arrancar();
+
+</script>
+</body>
+</html>
