@@ -193,6 +193,23 @@ button.row:active{background:var(--soft)}
 .mini{font-size:11.5px;color:var(--muted)}
 .rt{display:flex;gap:7px;align-items:center}
 
+/* ─── separadores das válvulas ─── */
+.tabs{display:flex;gap:6px;overflow-x:auto;margin:0 0 14px;padding-bottom:2px;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tb{flex:none;padding:8px 14px;border-radius:999px;border:1px solid var(--line);
+  background:var(--card);color:var(--muted);font:700 12.5px/1 system-ui;text-decoration:none;
+  white-space:nowrap}
+.tb:hover{color:var(--text);border-color:var(--violet)}
+.tb.on{background:linear-gradient(90deg,var(--violet),var(--violet2));border-color:transparent;color:#fff}
+
+/* ─── caixa de confirmação ─── */
+.chk{display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--text);cursor:pointer}
+.chk input{width:auto;margin:0}
+
+.sec a{float:right;text-transform:none;letter-spacing:0;font-weight:600;
+  color:var(--violet);text-decoration:none}
+
 </style>
 </head>
 <body>
@@ -207,7 +224,19 @@ button.row:active{background:var(--soft)}
     <div id="loginErr"></div>
     <div class="f"><label>Email</label><input id="email" type="email" autocomplete="email"></div>
     <div class="f"><label>Palavra-passe</label><input id="pw" type="password" autocomplete="current-password"></div>
-    <div id="nomeWrap" class="f" hidden><label>O teu nome</label><input id="nomeR" autocomplete="name"></div>
+    <div id="nomeWrap" hidden>
+      <div class="f"><label>O teu nome</label><input id="nomeR" autocomplete="name"></div>
+      <div class="f"><label>Cargo</label><input id="cargoR" placeholder="CEO, COO, CMO…"></div>
+      <div class="f"><label>De que é que respondes?</label>
+        <select id="depR">
+          <option value="marketing">Aquisição · Marketing — gerar procura</option>
+          <option value="comercial">Vendas · Comercial — fechar negócio</option>
+          <option value="sucesso">Sucesso do Cliente — manter e expandir</option>
+          <option value="geral">Direcção — vejo tudo</option>
+        </select>
+        <p class="mini" style="margin:6px 0 0">Define o painel que abres por defeito e o que podes alterar.
+          O Cyber pode mudar isto depois.</p></div>
+    </div>
     <button class="btn w" id="btnEntrar">Entrar</button>
     <p style="text-align:center;margin:15px 0 0">
       <a href="#" id="toggleReg" class="mini" style="color:var(--violet)">Primeira vez? Criar conta</a></p>
@@ -306,8 +335,19 @@ const METRICAS = { ligacoes:'Ligações', contactos_efectivos:'Contactos efectiv
   contas_criadas:'Contas captadas', vendas_pagas:'Vendas pagas' };
 
 /* ═══════════ estado ═══════════ */
-const S = { eu:null, equipa:[], contas:[], linhas:[], semana:segunda(), mes:mes1(), rota:'inicio' };
+const S = { eu:null, equipa:[], contas:[], linhas:[], semana:segunda(), mes:mes1(), rota:'inicio', metas:{} };
 const ceo = () => S.eu?.papel === 'ceo';
+
+/* ═══════════ departamentos: as válvulas do modelo de receita ═══════════ */
+const DEPS = {
+  marketing: { t:'Aquisição · Marketing',  s:'gerar procura' },
+  comercial: { t:'Vendas · Comercial',     s:'transformar procura em receita' },
+  sucesso:   { t:'Sucesso do Cliente',     s:'manter e expandir a base' },
+  geral:     { t:'Direcção',               s:'vê tudo, escreve tudo' },
+};
+const dep         = () => S.eu?.departamento || 'geral';
+const podeMidia   = () => ceo() || dep() === 'marketing';
+const podeSucesso = () => ceo() || dep() === 'sucesso';
 
 /* ═══════════ fila offline ═══════════ */
 const FQ = 'v3os_fila';
@@ -343,7 +383,10 @@ export function ligarLogin(){
     if(!email || !pw) return erroLogin('Email e palavra-passe.');
     el('btnEntrar').disabled = true;
     const r = modoReg
-      ? await sb.auth.signUp({ email, password:pw, options:{ data:{ nome: el('nomeR').value.trim() } } })
+      ? await sb.auth.signUp({ email, password:pw, options:{ data:{
+          nome: el('nomeR').value.trim(),
+          cargo: el('cargoR').value.trim(),
+          departamento: el('depR').value } } })
       : await sb.auth.signInWithPassword({ email, password:pw });
     el('btnEntrar').disabled = false;
     if(r.error) return erroLogin(r.error.message);
@@ -358,9 +401,12 @@ export async function arrancar(){
   const { data:{ session } } = await sb.auth.getSession();
   if(!session){ el('login').hidden = false; el('app').hidden = true; return; }
   const { data:p } = await sb.from('perfis').select('*').eq('id', session.user.id).maybeSingle();
-  S.eu = p || { id:session.user.id, nome:session.user.email, alvo_ligacoes_dia:9, papel:'socio' };
+  S.eu = p || { id:session.user.id, nome:session.user.email, alvo_ligacoes_dia:9,
+                papel:'socio', departamento:'geral' };
   el('login').hidden = true; el('app').hidden = false;
-  el('quem').textContent = S.eu.nome + (ceo() ? ' · CEO' : '');
+  el('quem').innerHTML = esc(S.eu.nome) +
+    `<br><span class="mini">${esc(S.eu.cargo || DEPS[dep()].t)}</span>` +
+    (ceo() ? ` · <a href="#equipa" style="color:var(--cyan)">equipa</a>` : '');
   const [{ data:eq }, { data:lr }] = await Promise.all([
     sb.from('perfis').select('*').eq('activo',true).order('nome'),
     sb.from('linhas_receita').select('*').eq('activa',true).order('nome'),
@@ -373,7 +419,7 @@ export async function arrancar(){
 el('sair').onclick = async e => { e.preventDefault(); await sb.auth.signOut(); location.reload(); };
 
 /* ═══════════ encaminhador ═══════════ */
-const ROTAS = ['inicio','dia','pipeline','compromissos','wbr','metricas','clientes'];
+const ROTAS = ['inicio','dia','pipeline','compromissos','wbr','metricas','clientes','equipa'];
 async function router(){
   const h = (location.hash || '#inicio').slice(1);
   const [r, arg] = h.split('/');
@@ -388,8 +434,9 @@ async function router(){
     else if(S.rota === 'pipeline')  await vPipeline();
     else if(S.rota === 'compromissos') await vCompromissos();
     else if(S.rota === 'wbr')       await vWbr();
-    else if(S.rota === 'metricas')  await vMetricas();
+    else if(S.rota === 'metricas')  await vMetricas(arg);
     else if(S.rota === 'clientes')  await vClientes();
+    else if(S.rota === 'equipa')    await vEquipa();
   }catch(ex){
     v.innerHTML = `<div class="al">Erro a carregar: ${esc(ex.message||ex)}</div>`;
   }
@@ -412,12 +459,14 @@ const nomeDe = id => S.equipa.find(p => p.id === id)?.nome || '—';
    1 · INÍCIO — O PLANO
    ══════════════════════════════════════════════════════ */
 async function vInicio(){
-  const [{ data:planos }, { data:tar }, { data:acc }, { data:hj }, { data:ven }] = await Promise.all([
+  const [{ data:planos }, { data:tar }, { data:acc }, { data:hj }, { data:ven }, { data:al }]
+    = await Promise.all([
     sb.from('planos').select('*').eq('periodo', S.mes).eq('horizonte','mes').limit(1),
     sb.from('v_tarefas').select('*').eq('dono', S.eu.id).eq('estado','pendente').order('prazo'),
     sb.from('v_accoes').select('*').eq('dono', S.eu.id).eq('estado','aberta').order('prazo'),
     sb.from('v_hoje').select('*').eq('utilizador', S.eu.id).maybeSingle(),
     sb.from('v_vendas').select('*').eq('mes', S.mes),
+    sb.from('v_alertas').select('*'),
   ]);
   const plano = planos?.[0];
   let dri = [];
@@ -436,6 +485,8 @@ async function vInicio(){
       <div class="sb">O plano de ${nomeMes(S.mes)} · ${plano?.publicado?'publicado':'rascunho'}</div></div>
     ${ceo() ? `<button class="btn" id="bPlano">${plano?'Editar plano':'Criar plano'}</button>` : ''}
   </div>
+
+  ${briefing(al)}
 
   ${!plano ? `<div class="card"><div class="empty">
       Ainda não há plano para ${nomeMes(S.mes)}.<br>
@@ -499,13 +550,53 @@ async function vInicio(){
     <div class="lbl">ligações hoje</div>
     <div class="bar"><i style="width:${Math.min(100,(d.ligacoes||0)/alvoL*100)}%"></i></div>
     <div style="margin-top:14px"><a class="btn" style="background:#ffffff26" href="#dia">Ir trabalhar →</a></div>
+  </div>
+
+  <div class="mini" style="text-align:center;margin:20px 0 10px;opacity:.75">
+    ${esc(S.eu.nome)} · ${esc(S.eu.cargo || DEPS[dep()].t)}
+    ${ceo() ? ' · <a href="#equipa" style="color:var(--violet)">equipa</a>' : ''}
+    · <a href="#" id="sairB" style="color:var(--violet)">terminar sessão</a>
   </div>`;
 
+  el('sairB').onclick = async e => { e.preventDefault(); await sb.auth.signOut(); location.reload(); };
   if(ceo()) el('bPlano').onclick = () => editorPlano(plano);
   el('bTarefa').onclick = () => novaTarefa();
   document.querySelectorAll('[data-feita]').forEach(b => b.onclick = () => fecharTarefa(b.dataset.feita));
   document.querySelectorAll('[data-accao]').forEach(b => b.onclick = async () => {
     await sb.from('wbr_fca').update({ estado:'feita' }).eq('id', b.dataset.accao); router(); });
+}
+
+/* ── briefing: o painel diz-te o que está bem e o que não está ── */
+const AREAS = { aquisicao:'Aquisição', vendas:'Vendas', sucesso:'Sucesso do cliente' };
+function briefing(al){
+  al = al || [];
+  if(!al.length) return '';
+  const mau  = al.filter(a => a.nivel === 'vermelho');
+  const meio = al.filter(a => a.nivel === 'ambar');
+  const bom  = al.filter(a => a.nivel === 'verde');
+  const hora = new Date().getHours();
+  const saudar = hora < 12 ? 'Bom dia' : hora < 19 ? 'Boa tarde' : 'Boa noite';
+  const primeiro = (S.eu.nome||'').split(' ')[0];
+  const resumo = !mau.length && !meio.length
+    ? 'Está tudo dentro do esperado. Hoje é só executar.'
+    : (mau.length ? `${mau.length} ${mau.length===1?'coisa está':'coisas estão'} fora do sítio` : '')
+      + (mau.length && meio.length ? ' e ' : '')
+      + (meio.length ? `${meio.length} ${meio.length===1?'precisa':'precisam'} de atenção` : '') + '.';
+
+  const linha = a => `<div class="row">
+    <span class="dot" style="background:var(--${a.nivel==='vermelho'?'red':a.nivel==='ambar'?'amber':'green'})"></span>
+    <span class="in"><span class="t1">${esc(a.titulo)}
+      <span class="mini">· ${esc(AREAS[a.area]||a.area)}</span></span>
+      <span class="t2">${esc(a.detalhe)}</span></span></div>`;
+
+  return `<div class="card dk" style="margin-bottom:12px">
+    <h2>${saudar}, ${esc(primeiro)}</h2>
+    <div class="lbl" style="font-size:15px;margin:2px 0 12px">${esc(resumo)}</div>
+    ${[...mau, ...meio].map(linha).join('')}
+    ${bom.length ? `<div class="mini" style="margin-top:12px;opacity:.7">A correr bem:
+      ${bom.map(b=>esc(b.titulo)).join(' · ')}</div>` : ''}
+    <div style="margin-top:14px"><a class="btn" style="background:#ffffff26" href="#metricas">Ver os números →</a></div>
+  </div>`;
 }
 
 /* ── editor do plano ── */
@@ -1223,49 +1314,181 @@ function editorFca(wbr_id, f, pre){
 }
 
 /* ══════════════════════════════════════════════════════
-   7 · MÉTRICAS
+   7 · MÉTRICAS — uma válvula de cada vez
+   O modelo de receita tem três válvulas: gerar procura,
+   transformar procura em receita, e manter o que entrou.
+   Cada uma tem um dono. Cada dono abre a sua.
    ══════════════════════════════════════════════════════ */
-async function vMetricas(){
-  const [{ data:rec }, { data:nps }, { data:cac }, { data:fun }, { data:ven }, { data:negs }] =
-    await Promise.all([
-      sb.from('v_receita').select('*').order('mes'),
-      sb.from('v_nps').select('*').maybeSingle(),
-      sb.from('v_cac').select('*').order('mes'),
-      sb.from('v_funil').select('*'),
-      sb.from('v_vendas').select('*').eq('mes', S.mes),
-      sb.from('negocios').select('conta_id,tcv_fee,data_pagamento').not('data_pagamento','is',null),
-    ]);
+const VALVULAS = {
+  geral:     { t:'Visão geral',  s:'as três válvulas num ecrã' },
+  aquisicao: { t:'Aquisição',    s:'gerar procura · Aires' },
+  vendas:    { t:'Vendas',       s:'procura → receita · Cyber' },
+  sucesso:   { t:'Sucesso',      s:'manter e expandir · Nélio' },
+};
+const valvulaPadrao = () =>
+  dep()==='marketing' ? 'aquisicao' :
+  dep()==='comercial' ? 'vendas'    :
+  dep()==='sucesso'   ? 'sucesso'   : 'geral';
+
+const K = (n,v,d,cls='fl') =>
+  `<div class="kpi"><div class="n">${n}</div><div class="v">${v}</div><div class="d ${cls}">${d||''}</div></div>`;
+const SETA = x => x == null ? 'fl' : Number(x) > 0 ? 'up' : Number(x) < 0 ? 'dn' : 'fl';
+const nomeLinha = id => S.linhas.find(l=>l.id===id)?.nome || 'Sem linha';
+const ritmoMes = () => { const h=new Date(); const dias=new Date(h.getFullYear(),h.getMonth()+1,0).getDate();
+                         return h.getDate()/dias; };
+
+async function vMetricas(aba){
+  const v = VALVULAS[aba] ? aba : valvulaPadrao();
+  const [{data:aqs},{data:sus},{data:vms},{data:rec},{data:nps},{data:ltv},
+         {data:alertas},{data:ml},{data:orc},{data:fun},{data:mts}] = await Promise.all([
+    sb.from('v_aquisicao').select('*').order('mes'),
+    sb.from('v_sucesso').select('*').order('mes'),
+    sb.from('v_vendas_mes').select('*').order('mes'),
+    sb.from('v_receita').select('*').order('mes'),
+    sb.from('v_nps').select('*').maybeSingle(),
+    sb.from('v_ltv').select('*').maybeSingle(),
+    sb.from('v_alertas').select('*'),
+    sb.from('v_midia_linha').select('*').eq('mes', S.mes),
+    sb.from('orcamento_midia').select('*').eq('mes', S.mes),
+    sb.from('v_funil').select('*'),
+    sb.from('metas').select('*').eq('periodo', S.mes).eq('horizonte','mes'),
+  ]);
   await carregarContas();
-  const r  = (rec||[]).find(x=>x.mes===S.mes) || (rec||[]).slice(-1)[0] || {};
-  const ca = (cac||[]).find(x=>x.mes===S.mes) || {};
-  const mapaF = Object.fromEntries((fun||[]).map(f=>[f.estado,f.contas]));
-  const topo = Math.max(1, ...FUNIL.map(e=>mapaF[e]||0));
-  const factMes = (ven||[]).reduce((a,x)=>a+Number(x.tcv_fee||0),0);
+  S.metas = Object.fromEntries((mts||[]).map(m=>[m.metrica, Number(m.alvo)]));
 
-  // LTV médio por cliente
-  const porConta = {};
-  (negs||[]).forEach(n => porConta[n.conta_id] = (porConta[n.conta_id]||0) + Number(n.tcv_fee||0));
-  const vals = Object.values(porConta);
-  const ltv = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
-  const cacV = Number(ca.cac_midia || ca.cac_declarado_medio || 0);
+  const A = (aqs||[]).find(x=>x.mes===S.mes) || {};
+  const U = (sus||[]).find(x=>x.mes===S.mes) || {};
+  const V = (vms||[]).find(x=>x.mes===S.mes) || {};
+  const R = (rec||[]).find(x=>x.mes===S.mes) || (rec||[]).slice(-1)[0] || {};
+  const L = ltv || {};
+  const al = alertas || [];
 
-  const k = (n,v,d,cls='fl') => `<div class="kpi"><div class="n">${n}</div><div class="v">${v}</div>
-    <div class="d ${cls}">${d||''}</div></div>`;
-  const seta = x => x == null ? 'fl' : Number(x) > 0 ? 'up' : Number(x) < 0 ? 'dn' : 'fl';
+  const tabs = Object.entries(VALVULAS).map(([k,o])=>
+    `<a class="tb ${k===v?'on':''}" href="#metricas/${k}">${o.t}</a>`).join('')
+    + (ceo() ? `<a class="tb" href="#equipa">Equipa</a>` : '');
 
   el('view').innerHTML = `
   <div class="hd"><div><h1>Métricas</h1>
-    <div class="sb">${nomeMes(S.mes)} · cada secção tem um dono</div></div></div>
+    <div class="sb">${nomeMes(S.mes)} · ${VALVULAS[v].s}</div></div></div>
+  <div class="tabs">${tabs}</div>
+  ${blocoAlertas(al.filter(a => v==='geral' ? true : a.area===(v==='aquisicao'?'aquisicao':v)), true)}
+  ${ v==='aquisicao' ? painelAquisicao(A, aqs, ml, orc, L)
+   : v==='vendas'    ? painelVendas(V, vms, fun)
+   : v==='sucesso'   ? painelSucesso(U, sus, rec, R, nps, L)
+   : painelGeral(A, V, U, R, L, nps) }`;
 
-  <div class="sec">Comercial · Cyber</div>
-  <div class="kpis">
-    ${k('Facturação do mês', MT(factMes)+' MT', 'fee recebido')}
-    ${k('Vendas pagas', (ven||[]).reduce((a,x)=>a+Number(x.vendas_pagas||0),0), 'com pagamento')}
-    ${k('Contas no pipeline', S.contas.filter(c=>!['cliente','perdido'].includes(c.estado)).length,
-        S.contas.filter(c=>c.atrasada).length+' atrasadas',
-        S.contas.filter(c=>c.atrasada).length?'dn':'up')}
-    ${k('Taxa de conversão', mapaF.alvo?pc((mapaF.cliente||0)/(mapaF.alvo||1)):'—','alvo → cliente')}
+  ligarBotoesMetricas();
+}
+
+/* ── alertas: o painel avisa, não espera que alguém repare ── */
+function blocoAlertas(al, compacto){
+  if(!al || !al.length) return '';
+  const mau = al.filter(a=>a.nivel!=='verde');
+  if(!mau.length) return `<div class="al ok">Nada fora do sítio nesta válvula.</div>`;
+  return `<div class="card" style="margin-bottom:12px"><h2>A olhar para ti</h2>
+    ${mau.map(a=>`<div class="row">
+      <span class="dot" style="background:var(--${a.nivel==='vermelho'?'red':'amber'})"></span>
+      <span class="in"><span class="t1">${esc(a.titulo)}</span>
+        <span class="t2">${esc(a.detalhe)}</span></span></div>`).join('')}
+    ${compacto?'':''}</div>`;
+}
+
+/* ══ VÁLVULA 1 · AQUISIÇÃO ══ */
+function painelAquisicao(A, serie, ml, orc, L){
+  const orcTotal = (orc||[]).reduce((a,x)=>a+Number(x.valor||0),0);
+  const inv = Number(A.investimento||0);
+  const alvoProcura = Number(S.metas?.procura_mes || 0);
+  const esperado = Math.round(alvoProcura * ritmoMes());
+  const cac = Number(A.cac||0);
+  const ltvv = Number(L.ltv_fee||0);
+
+  return `
+  <div class="card dk">
+    <h2>Procura gerada este mês</h2>
+    <div class="big">${A.procura_gerada||0} <span style="opacity:.45;font-size:22px">pessoas</span></div>
+    <div class="lbl">${alvoProcura
+      ? `a esta altura do mês deviam ser ${esperado} — meta de ${alvoProcura}/mês`
+      : 'sem meta definida para este mês'}</div>
+    <div class="bar"><i style="width:${alvoProcura?Math.min(100,(A.procura_gerada||0)/alvoProcura*100):0}%"></i></div>
   </div>
+
+  <div class="kpis" style="margin-top:12px">
+    ${K('Investimento', MT(inv)+' MT', orcTotal?`de ${MT(orcTotal)} MT orçamentados`:'sem orçamento definido',
+        orcTotal? (inv<=orcTotal?'up':'dn') : 'fl')}
+    ${K('Leads de mídia', A.leads_pagos||0, 'levantaram a mão')}
+    ${K('Custo por lead', A.cpl?MT(A.cpl)+' MT':'—', 'investimento ÷ leads')}
+    ${K('Custo por mensagem', A.custo_mensagem?MT(A.custo_mensagem)+' MT':'—', (A.mensagens||0)+' conversas')}
+    ${K('CTR', A.ctr!=null?pc(A.ctr):'—', MT(A.impressoes||0)+' impressões')}
+    ${K('CPM', A.cpm?MT(A.cpm)+' MT':'—', 'por mil impressões')}
+    ${K('CAC', cac?MT(cac)+' MT':'—', (A.clientes_novos||0)+' clientes novos')}
+    ${K('LTV / CAC', (cac&&ltvv)?(ltvv/cac).toFixed(1):'—',
+        (cac&&ltvv)?(ltvv/cac>=3?'saudável':'abaixo de 3'):'falta um dos dois',
+        (cac&&ltvv)?(ltvv/cac>=3?'up':'dn'):'fl')}
+  </div>
+
+  <div class="card"><h2>Como o CAC é calculado
+    <button class="btn sm g" id="bOrc">Orçamento do mês</button>
+    <button class="btn sm" id="bMidia">+ registo de mídia</button></h2>
+    <div class="al am">
+      <div><b>Não se escreve o CAC. Ele sai.</b><br>
+      Investimento do mês <b>${MT(inv)} MT</b> ÷ clientes novos do mês <b>${A.clientes_novos||0}</b>
+      = <b>${cac?MT(cac)+' MT':'—'}</b> por cliente.<br>
+      Para isto funcionar só tens de fazer duas coisas: lançar o investimento e marcar a conta como cliente.</div>
+    </div>
+  </div>
+
+  <div class="card"><h2>Orçamento por linha de receita · ${nomeMes(S.mes)}</h2>
+    <div class="scr"><table><thead><tr><th>Linha</th><th class="n">Orçamento</th>
+      <th class="n">Gasto</th><th class="n">Leads</th><th class="n">CPL</th></tr></thead><tbody>
+      ${(() => {
+        const ids = new Set([...(orc||[]).map(o=>o.linha_receita_id), ...(ml||[]).map(m=>m.linha_receita_id)]);
+        if(!ids.size) return '<tr><td colspan="5" class="empty">Define o orçamento do mês para começar.</td></tr>';
+        return [...ids].map(id=>{
+          const o = (orc||[]).find(x=>x.linha_receita_id===id) || {};
+          const m = (ml ||[]).find(x=>x.linha_receita_id===id) || {};
+          const ov = Number(o.valor||0), gv = Number(m.investimento||0);
+          return `<tr><td><b>${esc(id?nomeLinha(id):'Sem linha')}</b></td>
+            <td class="n">${MT(ov)}</td>
+            <td class="n" style="color:${gv>ov&&ov?'var(--red)':'inherit'}">${MT(gv)}</td>
+            <td class="n">${m.leads||0}</td>
+            <td class="n">${m.cpl?MT(m.cpl):'—'}</td></tr>`;}).join('');
+      })()}
+    </tbody></table></div>
+  </div>
+
+  <div class="card"><h2>Mês a mês</h2>
+    <div class="scr"><table><thead><tr><th>Mês</th><th class="n">Investido</th><th class="n">Impressões</th>
+      <th class="n">CTR</th><th class="n">Leads</th><th class="n">CPL</th><th class="n">Procura</th>
+      <th class="n">Clientes</th><th class="n">CAC</th></tr></thead><tbody>
+      ${(serie||[]).filter(x=>x.investimento||x.procura_gerada).slice(-12).reverse().map(x=>`<tr>
+        <td><b>${nomeMes(x.mes)}</b></td><td class="n">${MT(x.investimento)}</td>
+        <td class="n">${MT(x.impressoes)}</td><td class="n">${x.ctr!=null?pc(x.ctr):'—'}</td>
+        <td class="n">${x.leads_pagos||0}</td><td class="n">${x.cpl?MT(x.cpl):'—'}</td>
+        <td class="n">${x.procura_gerada||0}</td><td class="n">${x.clientes_novos||0}</td>
+        <td class="n"><b>${x.cac?MT(x.cac):'—'}</b></td></tr>`).join('')
+        || '<tr><td colspan="9" class="empty">Ainda não há nada registado.</td></tr>'}
+    </tbody></table></div>
+  </div>`;
+}
+
+/* ══ VÁLVULA 2 · VENDAS ══ */
+function painelVendas(V, serie, fun){
+  const mapaF = Object.fromEntries((fun||[]).map(f=>[f.estado,f.contas]));
+  const topo = Math.max(1, ...FUNIL.map(e=>mapaF[e]||0));
+  const vivas = S.contas.filter(c=>!['cliente','perdido'].includes(c.estado));
+  return `
+  <div class="kpis">
+    ${K('Facturação', MT(V.facturado||0)+' MT', 'recebido este mês')}
+    ${K('Vendas pagas', V.vendas||0, 'contrato pago, não assinado')}
+    ${K('Propostas', V.propostas||0, 'apresentadas este mês')}
+    ${K('Visitas feitas', V.visitas_feitas||0, (V.visitas_marcadas||0)+' marcadas')}
+    ${K('Contactos efectivos', V.contactos_efectivos||0, (V.interaccoes||0)+' tentativas')}
+    ${K('Taxa de atendimento', V.interaccoes?pc(V.contactos_efectivos/V.interaccoes):'—','falou com alguém')}
+    ${K('Pipeline vivo', vivas.length, S.contas.filter(c=>c.atrasada).length+' atrasadas',
+        S.contas.filter(c=>c.atrasada).length?'dn':'up')}
+    ${K('Conversão do funil', mapaF.alvo?pc((mapaF.cliente||0)/(mapaF.alvo||1)):'—','alvo → cliente')}
+  </div>
+
   <div class="card" style="margin-top:12px"><h2>O funil</h2>
     <div class="fnl">${FUNIL.map((e,i)=>{
       const n = mapaF[e]||0, ant = i?mapaF[FUNIL[i-1]]||0:0;
@@ -1274,39 +1497,50 @@ async function vMetricas(){
         <span class="v">${n}${i&&ant?` <span class="mini">${pc(n/ant)}</span>`:''}</span></div>`;}).join('')}
     </div></div>
 
-  <div class="sec">Marketing · Aires</div>
-  <div class="kpis">
-    ${k('Gasto de mídia', MT(ca.gasto_midia||0)+' MT', nomeMes(S.mes))}
-    ${k('CAC', ca.cac_midia?MT(ca.cac_midia)+' MT':'—', 'por cliente novo')}
-    ${k('CAC declarado', ca.cac_declarado_medio?MT(ca.cac_declarado_medio)+' MT':'—','média')}
-    ${k('LTV / CAC', cacV?(ltv/cacV).toFixed(1):'—', cacV?(ltv/cacV>=3?'saudável':'abaixo de 3'):'sem CAC',
-        cacV?(ltv/cacV>=3?'up':'dn'):'fl')}
-  </div>
-  <div class="card" style="margin-top:12px"><h2>Leads por origem</h2>
-    <div class="fnl">${(() => {
-      const o = {}; S.contas.forEach(c=>{ const x=c.origem||'outro'; o[x]=(o[x]||0)+1; });
-      const t = Math.max(1,...Object.values(o));
-      return Object.entries(o).sort((a,b)=>b[1]-a[1]).map(([x,n])=>`<div class="l">
-        <span class="nm">${esc(ORIGENS[x]||x)}</span><span class="tr"><i style="width:${n/t*100}%"></i></span>
-        <span class="v">${n}</span></div>`).join('');})()}</div></div>
+  <div class="card"><h2>Mês a mês</h2>
+    <div class="scr"><table><thead><tr><th>Mês</th><th class="n">Contas novas</th>
+      <th class="n">Contactos</th><th class="n">Visitas</th><th class="n">Propostas</th>
+      <th class="n">Vendas</th><th class="n">Facturado</th></tr></thead><tbody>
+      ${(serie||[]).filter(x=>x.interaccoes||x.vendas||x.contas_novas).slice(-12).reverse().map(x=>`<tr>
+        <td><b>${nomeMes(x.mes)}</b></td><td class="n">${x.contas_novas}</td>
+        <td class="n">${x.contactos_efectivos}</td><td class="n">${x.visitas_feitas}</td>
+        <td class="n">${x.propostas}</td><td class="n">${x.vendas}</td>
+        <td class="n"><b>${MT(x.facturado)}</b></td></tr>`).join('')
+        || '<tr><td colspan="7" class="empty">Ainda não há nada registado.</td></tr>'}
+    </tbody></table></div>
+  </div>`;
+}
 
-  <div class="sec">Operações · Nélio</div>
+/* ══ VÁLVULA 3 · SUCESSO DO CLIENTE ══ */
+function painelSucesso(U, serie, rec, R, nps, L){
+  return `
   <div class="kpis">
-    ${k('MRR', MT(r.mrr||0)+' MT', 'receita recorrente')}
-    ${k('Crescimento', r.crescimento!=null?pc(r.crescimento):'—','face ao mês anterior', seta(r.crescimento))}
-    ${k('NRR', r.nrr!=null?pc(r.nrr):'—', r.nrr>=1?'a crescer na base':'a encolher',
-        r.nrr!=null?(r.nrr>=1?'up':'dn'):'fl')}
-    ${k('GRR', r.grr!=null?pc(r.grr):'—','retenção bruta', r.grr!=null?(r.grr>=.85?'up':'dn'):'fl')}
-    ${k('Clientes activos', r.clientes_activos||0, (r.clientes_novos||0)+' novos')}
-    ${k('Perdidos', r.clientes_perdidos||0, r.taxa_churn!=null?pc(r.taxa_churn)+' de churn':'',
-        r.clientes_perdidos?'dn':'up')}
-    ${k('Expansão', MT(r.expansao||0)+' MT','upsell na base', r.expansao?'up':'fl')}
-    ${k('NPS', nps?.nps!=null?nps.nps:'—',
-        nps?`${nps.promotores}P · ${nps.passivos}N · ${nps.detractores}D`:'sem respostas',
-        nps?.nps>=50?'up':nps?.nps<0?'dn':'fl')}
+    ${K('MRR', MT(R.mrr||0)+' MT','receita recorrente')}
+    ${K('NRR', R.nrr!=null?pc(R.nrr):'—', R.nrr>=1?'a crescer na base':'a encolher',
+        R.nrr!=null?(R.nrr>=1?'up':'dn'):'fl')}
+    ${K('GRR', R.grr!=null?pc(R.grr):'—','retenção bruta', R.grr!=null?(R.grr>=.85?'up':'dn'):'fl')}
+    ${K('Retenção', U.retencao!=null?pc(U.retencao):'—', (U.clientes_inicio||0)+' no início do mês')}
+    ${K('Clientes activos', R.clientes_activos||0, (U.clientes_novos||0)+' novos este mês')}
+    ${K('Churn', U.churn!=null?pc(U.churn):'0%', (U.clientes_perdidos||0)+' saíram',
+        U.clientes_perdidos?'dn':'up')}
+    ${K('NPS', U.nps!=null?U.nps:(nps?.nps!=null?nps.nps:'—'),
+        (U.promotores||0)+'P · '+(U.detratores||0)+'D este mês',
+        (U.nps??nps?.nps)>=50?'up':(U.nps??nps?.nps)<0?'dn':'fl')}
+    ${K('LTV', L.ltv_fee?MT(L.ltv_fee)+' MT':'—', (L.meses_medios||'—')+' meses médios')}
+    ${K('Expansão', MT(R.expansao||0)+' MT','upsell na base', R.expansao?'up':'fl')}
+    ${K('Indicações', U.indicacoes||0,'contas que vieram por indicação', U.indicacoes?'up':'fl')}
+    ${K('Depoimentos', U.depoimentos||0,'autorizados este mês')}
+    ${K('Crescimento', R.crescimento!=null?pc(R.crescimento):'—','face ao mês anterior', SETA(R.crescimento))}
   </div>
 
-  <div class="card" style="margin-top:12px"><h2>Movimento da receita, mês a mês</h2>
+  <div class="card" style="margin-top:12px"><h2>Voz do cliente
+    <button class="btn sm g" id="bNps">+ NPS</button>
+    <button class="btn sm g" id="bDep">+ depoimento</button></h2>
+    <div class="al am"><div>O NPS não se adivinha: pergunta-se. Uma pergunta por cliente,
+      uma vez por mês — <i>de 0 a 10, qual a probabilidade de nos recomendar?</i></div></div>
+  </div>
+
+  <div class="card"><h2>Movimento da receita, mês a mês</h2>
     <div class="scr"><table><thead><tr><th>Mês</th><th class="n">MRR</th><th class="n">Novo</th>
       <th class="n">Expansão</th><th class="n">Contracção</th><th class="n">Churn</th>
       <th class="n">GRR</th><th class="n">NRR</th><th class="n">Cresc.</th></tr></thead><tbody>
@@ -1317,35 +1551,214 @@ async function vMetricas(){
         <td class="n" style="color:var(--amber)">${x.contracao?'−'+MT(x.contracao):'—'}</td>
         <td class="n" style="color:var(--red)">${x.churn?'−'+MT(x.churn):'—'}</td>
         <td class="n">${x.grr!=null?pc(x.grr):'—'}</td><td class="n">${x.nrr!=null?pc(x.nrr):'—'}</td>
-        <td class="n ${seta(x.crescimento)}">${x.crescimento!=null?pc(x.crescimento):'—'}</td>
+        <td class="n ${SETA(x.crescimento)}">${x.crescimento!=null?pc(x.crescimento):'—'}</td>
       </tr>`).join('') || '<tr><td colspan="9" class="empty">Sem dados ainda.</td></tr>'}
     </tbody></table></div>
+  </div>`;
+}
+
+/* ══ VISÃO GERAL ══ */
+function painelGeral(A, V, U, R, L, nps){
+  const cac = Number(A.cac||0), ltvv = Number(L.ltv_fee||0);
+  return `
+  ${cartaoMetas()}
+
+  <div class="sec">Aquisição · gerar procura <a class="mini" href="#metricas/aquisicao">abrir →</a></div>
+  <div class="kpis">
+    ${K('Procura gerada', A.procura_gerada||0,'pessoas que entraram')}
+    ${K('Investimento', MT(A.investimento||0)+' MT', A.orcamento?`de ${MT(A.orcamento)} MT`:'sem orçamento')}
+    ${K('Custo por lead', A.cpl?MT(A.cpl)+' MT':'—','mídia ÷ leads')}
+    ${K('CAC', cac?MT(cac)+' MT':'—','por cliente novo')}
   </div>
 
-  <div class="card"><h2>Gasto de mídia <button class="btn sm g" id="bMidia">+ gasto</button></h2>
-    <div class="scr"><table><thead><tr><th>Mês</th><th class="n">Gasto</th>
-      <th class="n">Clientes novos</th><th class="n">CAC</th></tr></thead><tbody>
-      ${(cac||[]).slice(-12).reverse().map(x=>`<tr><td>${nomeMes(x.mes)}</td>
-        <td class="n">${MT(x.gasto_midia)}</td><td class="n">${x.clientes_novos}</td>
-        <td class="n"><b>${x.cac_midia?MT(x.cac_midia):'—'}</b></td></tr>`).join('')
-        || '<tr><td colspan="4" class="empty">Sem gastos registados.</td></tr>'}
-    </tbody></table></div>
-  </div>`;
+  <div class="sec">Vendas · procura → receita <a class="mini" href="#metricas/vendas">abrir →</a></div>
+  <div class="kpis">
+    ${K('Facturação', MT(V.facturado||0)+' MT','recebido este mês')}
+    ${K('Vendas pagas', V.vendas||0,'contrato pago')}
+    ${K('Propostas', V.propostas||0,'apresentadas')}
+    ${K('Pipeline vivo', S.contas.filter(c=>!['cliente','perdido'].includes(c.estado)).length,
+        S.contas.filter(c=>c.atrasada).length+' atrasadas',
+        S.contas.filter(c=>c.atrasada).length?'dn':'up')}
+  </div>
 
-  el('bMidia').onclick = () => {
-    abrir(`<h3>Registar gasto de mídia</h3>
-      <div class="al am">Só a mídia que a <b>V3 paga para a V3</b>. A verba dos clientes não entra aqui.</div>
-      <div class="g2"><div class="f"><label>Data</label><input id="xD" type="date" value="${hoje()}"></div>
-        <div class="f"><label>Plataforma</label><input id="xP" value="Meta"></div></div>
-      <div class="f"><label>Valor (MT)</label><input id="xV" type="number" inputmode="numeric"></div>
-      <div class="f"><label>Nota</label><input id="xN"></div>
-      <button class="btn w" id="xG">Guardar</button>`);
-    el('xG').onclick = async () => {
-      const v = Number(el('xV').value); if(!v) return aviso('Falta o valor.');
-      const { error } = await sb.from('gastos_midia').insert({ data:el('xD').value,
-        plataforma:el('xP').value||'Meta', valor:v, nota:el('xN').value||null, criado_por:S.eu.id });
-      if(error) return aviso(error.message);
-      fechar(); router(); };
+  <div class="sec">Sucesso · manter e expandir <a class="mini" href="#metricas/sucesso">abrir →</a></div>
+  <div class="kpis">
+    ${K('MRR', MT(R.mrr||0)+' MT','receita recorrente')}
+    ${K('NRR', R.nrr!=null?pc(R.nrr):'—', R.nrr>=1?'a crescer':'a encolher', R.nrr!=null?(R.nrr>=1?'up':'dn'):'fl')}
+    ${K('NPS', U.nps!=null?U.nps:(nps?.nps!=null?nps.nps:'—'),'este mês')}
+    ${K('LTV / CAC', (cac&&ltvv)?(ltvv/cac).toFixed(1):'—',
+        (cac&&ltvv)?(ltvv/cac>=3?'saudável':'abaixo de 3'):'falta um dos dois',
+        (cac&&ltvv)?(ltvv/cac>=3?'up':'dn'):'fl')}
+  </div>`;
+}
+
+/* ── metas do mês: a régua contra a qual tudo é medido ── */
+const METAS_MES = [
+  { k:'procura_mes',        t:'Procura gerada',      u:'pessoas',   d:'quantas pessoas têm de entrar na base' },
+  { k:'leads_pagos_mes',    t:'Leads de mídia paga', u:'leads',     d:'quantos vêm de anúncios' },
+  { k:'clientes_novos_mes', t:'Clientes novos',      u:'clientes',  d:'quantos fecham' },
+  { k:'vendas_mes',         t:'Vendas pagas',        u:'vendas',    d:'contratos com pagamento recebido' },
+  { k:'faturacao_mes',      t:'Facturação',          u:'MT',        d:'quanto entra na conta' },
+  { k:'cpl_max',            t:'Custo por lead',      u:'MT (tecto)',d:'acima disto é caro' },
+  { k:'cac_max',            t:'Custo de aquisição',  u:'MT (tecto)',d:'acima disto não compensa' },
+  { k:'nps_min',            t:'NPS',                 u:'(mínimo)',  d:'abaixo disto há problema' },
+];
+
+function cartaoMetas(){
+  const m = S.metas || {};
+  const postas = METAS_MES.filter(x => m[x.k] != null);
+  return `<div class="card"><h2>Metas de ${nomeMes(S.mes)}
+    ${ceo()?`<button class="btn sm g" id="bMetas">Definir metas</button>`:''}</h2>
+    ${postas.length ? `<div class="scr"><table><thead><tr><th>Meta</th><th class="n">Alvo</th>
+      <th>O que mede</th></tr></thead><tbody>
+      ${postas.map(x=>`<tr><td><b>${x.t}</b></td><td class="n">${MT(m[x.k])} <span class="mini">${x.u}</span></td>
+        <td class="mini">${x.d}</td></tr>`).join('')}</tbody></table></div>`
+      : `<div class="empty">Sem metas definidas.<br>
+         ${ceo()?'Sem régua, o painel não sabe o que te avisar.':'O Cyber ainda não definiu as metas do mês.'}</div>`}
+  </div>`;
+}
+
+function folhaMetas(){
+  if(!ceo()) return aviso('As metas são do CEO.');
+  const m = S.metas || {};
+  abrir(`<h3>Metas de ${nomeMes(S.mes)}</h3>
+    <p class="mini">É contra estes números que o painel te avisa. Deixa em branco o que não quiseres medir.</p>
+    ${METAS_MES.map(x=>`<div class="f" style="margin-top:12px">
+      <label>${x.t} <span class="mini">· ${x.u} · ${x.d}</span></label>
+      <input id="mt_${x.k}" type="number" inputmode="numeric" value="${m[x.k] ?? ''}"></div>`).join('')}
+    <button class="btn w" id="mG" style="margin-top:16px">Guardar</button>`);
+  el('mG').onclick = async () => {
+    const { data:ja } = await sb.from('metas').select('id,metrica')
+      .eq('periodo', S.mes).eq('horizonte','mes');
+    for(const x of METAS_MES){
+      const v = el('mt_'+x.k).value;
+      const existe = (ja||[]).find(r=>r.metrica===x.k);
+      if(v === '' || v == null){
+        if(existe) await sb.from('metas').delete().eq('id', existe.id);
+        continue;
+      }
+      const campos = { periodo:S.mes, horizonte:'mes', metrica:x.k, alvo:Number(v), nota:x.d };
+      if(existe) await sb.from('metas').update(campos).eq('id', existe.id);
+      else       await sb.from('metas').insert(campos);
+    }
+    fechar(); aviso('Metas guardadas.','ok'); router();
+  };
+}
+
+/* ── botões dos painéis ── */
+function ligarBotoesMetricas(){
+  const bT = el('bMetas'); if(bT) bT.onclick = folhaMetas;
+  const bM = el('bMidia'); if(bM) bM.onclick = folhaMidia;
+  const bO = el('bOrc');   if(bO) bO.onclick = folhaOrcamento;
+  const bN = el('bNps');   if(bN) bN.onclick = folhaNps;
+  const bD = el('bDep');   if(bD) bD.onclick = folhaDepoimento;
+}
+
+function opcoesLinhas(sel){
+  return `<option value="">— sem linha —</option>` +
+    S.linhas.map(l=>`<option value="${l.id}" ${sel===l.id?'selected':''}>${esc(l.nome)}</option>`).join('');
+}
+
+function folhaMidia(){
+  if(!podeMidia()) return aviso('Só o Aires (ou o Cyber) regista mídia.');
+  abrir(`<h3>Registar mídia</h3>
+    <div class="al am">Só a mídia que a <b>V3 paga para a V3</b>. A verba dos clientes não entra aqui.</div>
+    <div class="g2">
+      <div class="f"><label>Data</label><input id="xD" type="date" value="${hoje()}"></div>
+      <div class="f"><label>Plataforma</label><input id="xP" value="Meta"></div></div>
+    <div class="f"><label>Linha de receita</label><select id="xL">${opcoesLinhas()}</select></div>
+    <div class="f"><label>Campanha</label><input id="xC" placeholder="nome da campanha"></div>
+    <div class="f"><label>Investimento (MT)</label><input id="xV" type="number" inputmode="numeric"></div>
+    <p class="mini" style="margin:16px 0 6px"><b>O que é que este dinheiro produziu?</b>
+      Preenche o que souberes — o CTR, o CPL e o custo por mensagem saem daqui sozinhos.</p>
+    <div class="g2">
+      <div class="f"><label>Impressões</label><input id="xI" type="number" inputmode="numeric"></div>
+      <div class="f"><label>Alcance</label><input id="xA" type="number" inputmode="numeric"></div></div>
+    <div class="g2">
+      <div class="f"><label>Cliques</label><input id="xK" type="number" inputmode="numeric"></div>
+      <div class="f"><label>Leads</label><input id="xE" type="number" inputmode="numeric"></div></div>
+    <div class="f"><label>Mensagens iniciadas</label><input id="xM" type="number" inputmode="numeric"></div>
+    <div class="f"><label>Nota</label><input id="xN"></div>
+    <button class="btn w" id="xG">Guardar</button>`);
+  el('xG').onclick = async () => {
+    const v = Number(el('xV').value); if(!v) return aviso('Falta o investimento.');
+    const { error } = await sb.from('gastos_midia').insert({
+      data: el('xD').value, plataforma: el('xP').value||'Meta', valor: v,
+      linha_receita_id: el('xL').value || null, campanha: el('xC').value || null,
+      impressoes: Number(el('xI').value)||0, alcance: Number(el('xA').value)||0,
+      cliques: Number(el('xK').value)||0, leads: Number(el('xE').value)||0,
+      mensagens: Number(el('xM').value)||0, nota: el('xN').value||null, criado_por: S.eu.id });
+    if(error) return aviso(error.message);
+    fechar(); router();
+  };
+}
+
+function folhaOrcamento(){
+  if(!podeMidia()) return aviso('Só o Aires (ou o Cyber) define o orçamento de anúncios.');
+  abrir(`<h3>Orçamento de anúncios · ${nomeMes(S.mes)}</h3>
+    <p class="mini">O mês começa por aqui: quanto vamos pôr em anúncios e para que linha de receita.
+      Uma linha de cada vez — repete para as outras.</p>
+    <div class="f" style="margin-top:14px"><label>Linha de receita</label>
+      <select id="oL">${opcoesLinhas()}</select></div>
+    <div class="f"><label>Valor (MT)</label><input id="oV" type="number" inputmode="numeric"></div>
+    <div class="f"><label>Alvo de leads para esta linha</label>
+      <input id="oA" type="number" inputmode="numeric"></div>
+    <div class="f"><label>Nota</label><input id="oN"></div>
+    <button class="btn w" id="oG">Guardar</button>`);
+  el('oG').onclick = async () => {
+    const v = Number(el('oV').value); if(!v) return aviso('Falta o valor.');
+    const linha = el('oL').value || null;
+    let error;
+    const campos = { mes:S.mes, linha_receita_id:linha, valor:v,
+                     alvo_leads:Number(el('oA').value)||null, nota:el('oN').value||null,
+                     criado_por:S.eu.id };
+    const { data:dup } = await sb.from('orcamento_midia').select('id,linha_receita_id').eq('mes', S.mes);
+    const achado = (dup||[]).find(d => (d.linha_receita_id||null) === linha);
+    if(achado) ({ error } = await sb.from('orcamento_midia').update(campos).eq('id', achado.id));
+    else       ({ error } = await sb.from('orcamento_midia').insert(campos));
+    if(error) return aviso(error.message);
+    fechar(); router();
+  };
+}
+
+function folhaNps(){
+  if(!podeSucesso()) return aviso('Só o Nélio (ou o Cyber) regista NPS.');
+  const cls = S.contas.filter(c=>c.estado==='cliente');
+  if(!cls.length) return aviso('Ainda não há clientes para avaliar.');
+  abrir(`<h3>Registar NPS</h3>
+    <p class="mini">De 0 a 10, qual a probabilidade de nos recomendar a um colega?</p>
+    <div class="f" style="margin-top:14px"><label>Cliente</label><select id="nC">
+      ${cls.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('')}</select></div>
+    <div class="f"><label>Nota (0 a 10)</label><input id="nN" type="number" min="0" max="10"></div>
+    <div class="f"><label>O que disse</label><textarea id="nT" rows="3"></textarea></div>
+    <button class="btn w" id="nG">Guardar</button>`);
+  el('nG').onclick = async () => {
+    const n = Number(el('nN').value);
+    if(!(n>=0 && n<=10)) return aviso('A nota vai de 0 a 10.');
+    const { error } = await sb.from('nps').insert({ conta_id:el('nC').value, nota:n,
+      comentario:el('nT').value||null, recolhido_por:S.eu.id });
+    if(error) return aviso(error.message);
+    fechar(); router();
+  };
+}
+
+function folhaDepoimento(){
+  if(!podeSucesso()) return aviso('Só o Nélio (ou o Cyber) regista depoimentos.');
+  const cls = S.contas.filter(c=>c.estado==='cliente');
+  if(!cls.length) return aviso('Ainda não há clientes.');
+  abrir(`<h3>Guardar depoimento</h3>
+    <div class="f"><label>Cliente</label><select id="dC">
+      ${cls.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('')}</select></div>
+    <div class="f"><label>Quem disse</label><input id="dA" placeholder="nome e cargo"></div>
+    <div class="f"><label>O que disse</label><textarea id="dT" rows="4"></textarea></div>
+    <label class="chk"><input type="checkbox" id="dOk"> Autorizou que usemos publicamente</label>
+    <button class="btn w" id="dG" style="margin-top:14px">Guardar</button>`);
+  el('dG').onclick = async () => {
+    const t = el('dT').value.trim(); if(!t) return aviso('Falta o texto.');
+    const { error } = await sb.from('depoimentos').insert({ conta_id:el('dC').value, texto:t,
+      autor:el('dA').value||null, autorizado:el('dOk').checked, criado_por:S.eu.id });
+    if(error) return aviso(error.message);
+    fechar(); router();
   };
 }
 
@@ -1428,6 +1841,78 @@ async function vClientes(){
       if(error) return aviso(error.message);
       fechar(); router(); };
   });
+}
+
+/* ══════════════════════════════════════════════════════
+   9 · EQUIPA — quem é quem e quem pode o quê
+   ══════════════════════════════════════════════════════ */
+async function vEquipa(){
+  if(!ceo()){ el('view').innerHTML = '<div class="al">Esta página é do CEO.</div>'; return; }
+  const { data:eq } = await sb.from('perfis').select('*').order('nome');
+  S.equipa = eq || [];
+  el('view').innerHTML = `
+  <div class="hd"><div><h1>Equipa</h1>
+    <div class="sb">cada pessoa responde por uma válvula do modelo de receita</div></div></div>
+
+  <div class="card"><h2>Como alguém entra</h2>
+    <div class="al am"><div>Manda o link do painel. Na entrada, <b>Primeira vez? Criar conta</b> —
+      escolhe o nome, o cargo e a válvula de que responde. Depois confirmas aqui em baixo.</div></div>
+  </div>
+
+  <div class="card"><h2>Quem é quem</h2>
+    <div class="scr"><table><thead><tr><th>Pessoa</th><th>Cargo</th><th>Válvula</th>
+      <th>Papel</th><th class="n">Alvo/dia</th><th></th></tr></thead><tbody>
+      ${(eq||[]).map(p=>`<tr>
+        <td><b>${esc(p.nome)}</b>${p.activo?'':' <span class="mini">(inactivo)</span>'}</td>
+        <td>${esc(p.cargo)||'—'}</td>
+        <td>${esc(DEPS[p.departamento||'geral'].t)}</td>
+        <td>${p.papel==='ceo'?'<b>CEO</b>':esc(p.papel)}</td>
+        <td class="n">${p.alvo_ligacoes_dia||0}</td>
+        <td class="n"><button class="btn sm g" data-p="${p.id}">editar</button></td>
+      </tr>`).join('')}
+    </tbody></table></div>
+  </div>
+
+  <div class="card"><h2>Quem pode alterar o quê</h2>
+    <div class="scr"><table><thead><tr><th>Área</th><th>Quem escreve</th><th>Quem vê</th></tr></thead><tbody>
+      <tr><td>Investimento e desempenho de anúncios, orçamento de mídia</td>
+          <td>Aquisição · Marketing</td><td>todos</td></tr>
+      <tr><td>NPS e depoimentos</td><td>Sucesso do Cliente</td><td>todos</td></tr>
+      <tr><td>Contas, contactos, interacções, negócios, tarefas</td><td>toda a equipa</td><td>todos</td></tr>
+      <tr><td>Plano do mês, DRI, metas, compromissos, linhas de receita</td><td>só o CEO</td><td>todos</td></tr>
+      <tr><td>Apagar seja o que for</td><td>só o CEO</td><td>—</td></tr>
+    </tbody></table></div>
+    <p class="mini" style="margin-top:10px">Ver é aberto a todos de propósito: numa equipa de três,
+      a transparência vale mais do que o sigilo. O que se protege é quem <i>altera</i>.</p>
+  </div>`;
+
+  document.querySelectorAll('[data-p]').forEach(b => b.onclick = () =>
+    editarPessoa((eq||[]).find(x=>x.id===b.dataset.p)));
+}
+
+function editarPessoa(p){
+  abrir(`<h3>${esc(p.nome)}</h3>
+    <div class="f"><label>Cargo</label><input id="eC" value="${esc(p.cargo||'')}"></div>
+    <div class="f"><label>Válvula de que responde</label><select id="eD">
+      ${Object.entries(DEPS).map(([k,o])=>
+        `<option value="${k}" ${(p.departamento||'geral')===k?'selected':''}>${o.t} — ${o.s}</option>`).join('')}
+    </select></div>
+    <div class="f"><label>Papel</label><select id="eP">
+      ${['ceo','socio','colaborador'].map(x=>
+        `<option value="${x}" ${p.papel===x?'selected':''}>${x}</option>`).join('')}
+    </select></div>
+    <div class="f"><label>Alvo de ligações por dia</label>
+      <input id="eA" type="number" value="${p.alvo_ligacoes_dia||0}"></div>
+    <label class="chk"><input type="checkbox" id="eAc" ${p.activo?'checked':''}> Activo</label>
+    <button class="btn w" id="eG" style="margin-top:14px">Guardar</button>`);
+  el('eG').onclick = async () => {
+    const { error } = await sb.from('perfis').update({
+      cargo: el('eC').value || null, departamento: el('eD').value, papel: el('eP').value,
+      alvo_ligacoes_dia: Number(el('eA').value)||0, activo: el('eAc').checked }).eq('id', p.id);
+    if(error) return aviso(error.message);
+    if(p.id === S.eu.id){ aviso('Perfil actualizado.'); location.reload(); return; }
+    fechar(); router();
+  };
 }
 
 /* ═══════════ folhas ═══════════ */
