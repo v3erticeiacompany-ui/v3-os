@@ -112,6 +112,11 @@ button.row:active{background:var(--soft)}
 .row .in{flex:1;min-width:0}
 .row .t1{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row .t2{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* linhas que precisam de respirar: o laudo e os alertas longos */
+.row.solta{align-items:flex-start}
+.row.solta .t1,.row.solta .t2{display:block;white-space:normal;overflow:visible;text-overflow:clip}
+.row.solta .t2{margin-top:3px;line-height:1.5}
+.row.solta .dot{margin-top:6px;flex:none}
 .dot{width:9px;height:9px;border-radius:50%;flex:none}
 .tag{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;
   border-radius:20px;flex:none;white-space:nowrap}
@@ -136,13 +141,28 @@ button.row:active{background:var(--soft)}
 .bloco h3{font:800 10.5px/1 system-ui;letter-spacing:.09em;text-transform:uppercase;margin-bottom:9px}
 
 .kan{display:grid;grid-template-columns:repeat(6,minmax(176px,1fr));gap:11px;overflow-x:auto;padding-bottom:6px}
-.col{background:var(--soft);border-radius:13px;padding:10px;min-height:110px}
+.kan.k9{grid-template-columns:repeat(9,minmax(164px,1fr))}
+.kan.k3{grid-template-columns:repeat(3,minmax(164px,1fr))}
+.col{background:var(--soft);border-radius:13px;padding:10px;min-height:110px;
+  border:1.5px dashed transparent;transition:border-color .12s,background .12s}
+.col.alvo{border-color:var(--violet);background:color-mix(in srgb,var(--violet) 9%,var(--soft))}
 .col h4{font:800 10px/1 system-ui;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);
-  margin-bottom:9px;display:flex;justify-content:space-between}
+  margin-bottom:9px;display:flex;justify-content:space-between;gap:6px}
+.col .zona{min-height:56px}
 .crd{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 10px;
-  margin-bottom:7px;cursor:pointer;width:100%;text-align:left}
+  margin-bottom:7px;cursor:pointer;width:100%;text-align:left;touch-action:pan-y}
+.crd[draggable]{cursor:grab}
+.crd.a-levar{opacity:.34}
+.crd.fantasma{position:fixed;z-index:120;pointer-events:none;opacity:.94;cursor:grabbing;
+  box-shadow:0 14px 34px #0004;transform:rotate(-1.4deg);margin:0}
 .crd .t1{font-weight:700;font-size:13px}
 .crd .t2{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* faixas de responsabilidade por cima do quadro */
+.faixas{display:grid;grid-template-columns:repeat(9,minmax(164px,1fr));gap:11px;margin-bottom:6px;
+  overflow-x:auto}
+.faixas span{font:800 9.5px/1 system-ui;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);background:var(--soft);border-radius:8px;padding:6px 10px;text-align:center}
 
 .fnl{display:grid;gap:7px}
 .fnl .l{display:flex;align-items:center;gap:10px;font-size:13.5px}
@@ -254,6 +274,7 @@ button.row:active{background:var(--soft)}
     <a class="nv" href="#wbr"><span class="ic">⟳</span><span>WBR</span></a>
     <a class="nv" href="#metricas"><span class="ic">▲</span><span>Métricas</span></a>
     <a class="nv" href="#clientes"><span class="ic">★</span><span>Clientes</span></a>
+    <a class="nv" href="#base"><span class="ic">◉</span><span>Base</span></a>
     <div class="pe"><span id="quem"></span><br>
       <a href="#" id="sair" style="color:var(--navtext)">sair</a></div>
   </nav>
@@ -290,7 +311,20 @@ let createClient;
 try {
   ({ createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'));
 } catch {
-  ({ createClient } = await import('https://esm.sh/@supabase/supabase-js@2'));
+  try {
+    ({ createClient } = await import('https://esm.sh/@supabase/supabase-js@2'));
+  } catch {
+    /* Sem isto, uma rede que bloqueie os dois CDN deixa um ecrã branco
+       e ninguém percebe que o problema é a ligação e não a app. */
+    document.body.innerHTML =
+      '<div style="max-width:420px;margin:18vh auto;padding:0 22px;text-align:center;' +
+      'font:15px/1.6 system-ui;color:#13131F">' +
+      '<div style="font:700 34px/1 Georgia,serif;margin-bottom:18px">V3 OS</div>' +
+      '<div style="background:#FEE2E2;color:#991B1B;border-radius:13px;padding:16px 18px">' +
+      '<b>Não consegui carregar a app.</b><br>A ligação à internet não deixou passar ' +
+      'os ficheiros de que o V3 OS precisa. Tenta com outra rede ou desliga o VPN.</div></div>';
+    throw new Error('CDN inacessível');
+  }
 }
 
 const SB_URL = 'https://reslvumdumqhuvmnksng.supabase.co';
@@ -324,10 +358,28 @@ export const TEMPS = {
   perdido:{t:'Perdido',c:'#9A99B5',f:'#F1F1F6'},
 };
 const ORD = { super_hot:0, hot:1, warm:2, novo:3, cold:4, cliente:9, perdido:9 };
-export const ESTADOS = { alvo:'Alvo', em_contacto:'Em contacto', visita_marcada:'Visita marcada',
-  visita_feita:'Visita feita', proposta:'Proposta', cliente:'Cliente', perdido:'Perdido',
+export const ESTADOS = {
+  lead:'Lead', contactado:'Contactado', qualificacao:'Em qualificação', qualificado:'Qualificado',
+  desqualificado:'Desqualificado', reuniao_agendada:'Reunião agendada', no_show:'No-show',
+  reuniao_feita:'Reunião feita', proposta:'Proposta', cliente:'Fechado', perdido:'Não fechado',
   dormente:'Dormente' };
-const FUNIL = ['alvo','em_contacto','visita_marcada','visita_feita','proposta','cliente'];
+/* As colunas do quadro, pela ordem por que se anda. */
+const FUNIL = ['lead','contactado','qualificacao','qualificado','reuniao_agendada',
+               'no_show','reuniao_feita','proposta','cliente'];
+/* Saídas: não são etapas, são portas. Ficam fora do quadro principal. */
+const SAIDAS = ['desqualificado','perdido','dormente'];
+/* Quem é dono de cada etapa. O lead entra no SDR e sai para o closer. */
+const DONO_ETAPA = {
+  lead:'sdr', contactado:'sdr', qualificacao:'sdr', qualificado:'sdr', desqualificado:'sdr',
+  reuniao_agendada:'closer', no_show:'closer', reuniao_feita:'closer', proposta:'closer',
+  cliente:'closer', perdido:'closer', dormente:'sdr' };
+const COR_ETAPA = {
+  lead:'#6B6880', contactado:'#4361FF', qualificacao:'#7C3AED', qualificado:'#7C3AED',
+  desqualificado:'#9A99B5', reuniao_agendada:'#B26A00', no_show:'#DC2626',
+  reuniao_feita:'#16B8CE', proposta:'#EA580C', cliente:'#059669', perdido:'#9A99B5',
+  dormente:'#9A99B5' };
+const TIERS = ['T0 · abaixo de 50.000','T1 · 50–150 mil','T2 · 150–250 mil',
+               'T3 · 250–500 mil','T4 · 500 mil – 1 M','T5 · acima de 1 M'];
 const ORIGENS = { hunting:'Hunting', inbound:'Inbound', indicacao:'Indicação',
   outbound:'Outbound', evento:'Evento', outro:'Outro' };
 const METRICAS = { ligacoes:'Ligações', contactos_efectivos:'Contactos efectivos',
@@ -419,7 +471,7 @@ export async function arrancar(){
 el('sair').onclick = async e => { e.preventDefault(); await sb.auth.signOut(); location.reload(); };
 
 /* ═══════════ encaminhador ═══════════ */
-const ROTAS = ['inicio','dia','pipeline','compromissos','wbr','metricas','clientes','equipa'];
+const ROTAS = ['inicio','dia','pipeline','compromissos','wbr','metricas','clientes','base','equipa'];
 async function router(){
   const h = (location.hash || '#inicio').slice(1);
   const [r, arg] = h.split('/');
@@ -436,6 +488,7 @@ async function router(){
     else if(S.rota === 'wbr')       await vWbr();
     else if(S.rota === 'metricas')  await vMetricas(arg);
     else if(S.rota === 'clientes')  await vClientes();
+    else if(S.rota === 'base')      await vBase();
     else if(S.rota === 'equipa')    await vEquipa();
   }catch(ex){
     v.innerHTML = `<div class="al">Erro a carregar: ${esc(ex.message||ex)}</div>`;
@@ -752,20 +805,22 @@ const linhaConta = c => {
     ${c.atrasada?`<span class="warn">${c.dias_sem_contacto}d</span>`:''}
     <span class="tag" style="color:${t.c};background:${t.f}">${t.t}</span></button>`;
 };
+/* Posto a verdadeiro durante o arrasto, para o clique que vem a seguir não abrir a ficha. */
+let arrastando = false;
 const ligarLinhas = () => document.querySelectorAll('[data-c]').forEach(b =>
-  b.onclick = () => registar(b.dataset.c));
+  b.onclick = () => { if(!arrastando) registar(b.dataset.c); });
 
 /* ── registo de três segundos ── */
 const ACCOES = [
-  { k:'nao_atendeu',           i:'📵', t:'Não atendeu',               s:'Volta amanhã',        e:'em_contacto',    d:1 },
-  { k:'atendeu_marcou_visita', i:'📅', t:'Atendeu — marquei visita',  s:'Pede a data',         e:'visita_marcada', d:null },
-  { k:'atendeu_pensar',        i:'🤔', t:'Atendeu — ficou de pensar', s:'Volta em 3 dias',     e:'em_contacto',    d:3 },
-  { k:'atendeu_sem_interesse', i:'🚫', t:'Atendeu — sem interesse',   s:'Fecha a conta',       e:'perdido',        d:null },
-  { k:'pessoa_errada',         i:'🔀', t:'Pessoa errada',             s:'Volta amanhã',        e:'em_contacto',    d:1 },
-  { k:'visita_realizada',      i:'✅', t:'Visita realizada',          s:'Seguimento em 2 dias',e:'visita_feita',   d:2 },
-  { k:'proposta_apresentada',  i:'📄', t:'Proposta apresentada',      s:'Seguimento em 3 dias',e:'proposta',       d:3 },
+  { k:'nao_atendeu',           i:'📵', t:'Não atendeu',               s:'Volta amanhã',         e:'contactado',       d:1 },
+  { k:'atendeu_marcou_visita', i:'📅', t:'Atendeu — marquei reunião', s:'Pede a data',          e:'reuniao_agendada', d:null },
+  { k:'atendeu_pensar',        i:'🤔', t:'Atendeu — ficou de pensar', s:'Volta em 3 dias',      e:'qualificacao',     d:3 },
+  { k:'atendeu_sem_interesse', i:'🚫', t:'Atendeu — sem interesse',   s:'Fecha a conta',        e:'desqualificado',   d:null },
+  { k:'pessoa_errada',         i:'🔀', t:'Pessoa errada',             s:'Volta amanhã',         e:'contactado',       d:1 },
+  { k:'visita_realizada',      i:'✅', t:'Reunião realizada',         s:'Seguimento em 2 dias', e:'reuniao_feita',    d:2 },
+  { k:'proposta_apresentada',  i:'📄', t:'Proposta apresentada',      s:'Seguimento em 3 dias', e:'proposta',         d:3 },
 ];
-const RANK = { alvo:0, em_contacto:1, visita_marcada:2, visita_feita:3, proposta:4 };
+const RANK = Object.fromEntries(FUNIL.map((e,i)=>[e,i]));
 
 function registar(id){
   const c = S.contas.find(x => x.id === id); if(!c) return;
@@ -775,6 +830,13 @@ function registar(id){
       <button class="x" data-x>×</button></div>
     ${tel?`<a class="btn d w" href="tel:${esc(tel)}">Ligar ${esc(tel)}</a>`
          :`<div class="al am">Sem telefone registado.</div>`}
+    <div class="sp"></div>
+    <label>Etapa</label>
+    <div class="chips">${[...FUNIL,...SAIDAS].map(e=>
+      `<button class="chip ${c.estado===e?'on':''}" data-et="${e}"
+        style="${c.estado===e?`background:${COR_ETAPA[e]};border-color:${COR_ETAPA[e]};color:#fff`:''}"
+        >${ESTADOS[e]}</button>`).join('')}</div>
+    <div class="sp"></div>
     <div class="acts">${ACCOES.map(a=>`<button class="act" data-k="${a.k}">
       <span class="ic">${a.i}</span><span>${a.t}<small>${a.s}</small></span></button>`).join('')}</div>
     <div class="sp"></div>
@@ -831,6 +893,8 @@ function registar(id){
       { tipo: a.k==='visita_realizada'?'visita':a.k==='proposta_apresentada'?'reuniao':'ligacao',
         resultado:a.k });
   });
+  document.querySelectorAll('[data-et]').forEach(b => b.onclick = () => {
+    fechar(); moverEtapa(c.id, b.dataset.et); });
   el('rSo').onclick = () => aplicar({ proximo_passo: el('rP').value.trim()||null,
     proxima_data: el('rD').value||null }, { tipo:'outro', resultado:'outro' });
   el('rDorm').onclick = () => aplicar({ estado:'dormente', proxima_data:mais(30),
@@ -856,40 +920,104 @@ function novaConta(){
         <option value="indicacao">Indicação</option><option value="outbound">Outbound</option>
         <option value="evento">Evento</option><option value="outro">Outro</option></select></div>
     </div>
+    <div class="g2">
+      <div class="f"><label>SDR · quem qualifica</label><select id="cSdr">
+        <option value="">—</option>
+        ${S.equipa.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join('')}</select></div>
+      <div class="f"><label>Closer · quem fecha</label><select id="cCl">
+        <option value="">—</option>
+        ${S.equipa.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join('')}</select></div>
+    </div>
+    <div class="f"><label>Facturação mensal do cliente (MT)</label>
+      <input id="cF" type="number" inputmode="numeric" placeholder="180000">
+      <div class="mini" id="cTier" style="margin-top:5px;color:var(--muted)">O tier sai daqui.</div></div>
+    <div class="f"><label>Etiquetas · separadas por vírgula</label>
+      <input id="cE" placeholder="restauração, indicada pelo Abdul">
+      <div class="mini" style="margin-top:5px;color:var(--muted)">
+        Cada etiqueta vira uma coorte na Base de clientes.</div></div>
     <button class="btn w" id="cG">Guardar</button>`);
+  el('cF').oninput = () => {
+    const v = Number(el('cF').value);
+    el('cTier').textContent = !v ? 'O tier sai daqui.'
+      : v<50000 ? 'T0 · abaixo do piso — só no touch ou revenue share'
+      : TIERS[tierDe(v)];
+  };
   el('cG').onclick = async () => {
     const nome = el('cN').value.trim(); if(!nome) return aviso('Falta o nome.');
     const { error } = await sb.from('contas').insert({ nome, telefone:el('cT').value.trim()||null,
       segmento:el('cS').value, origem:el('cR').value, dono:el('cO').value, criado_por:S.eu.id,
-      estado:'alvo', proximo_passo:'Primeira ligação', proxima_data:hoje() });
+      sdr: el('cSdr').value || null, closer: el('cCl').value || null,
+      faturamento_mensal: Number(el('cF').value) || null,
+      etiquetas: etiquetasDe(el('cE').value),
+      estado:'lead', proximo_passo:'Primeiro contacto', proxima_data:hoje() });
     if(error) return aviso(error.message);
     fechar(); router();
   };
 }
+/* mesma régua da folha Oferta do catálogo */
+const tierDe = v => v==null||v==='' ? null
+  : v<50000 ? 0 : v<150000 ? 1 : v<250000 ? 2 : v<500000 ? 3 : v<1000000 ? 4 : 5;
+const etiquetasDe = s => (s||'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);
 
 /* ══════════════════════════════════════════════════════
    3 · PIPELINE
    ══════════════════════════════════════════════════════ */
-let filtro = { temp:'', dono:'', seg:'' };
+let filtro = { temp:'', dono:'', seg:'', fase:'' };
+
+/* Mover uma conta de etapa. É o único sítio que escreve `estado`:
+   o gatilho da base de dados regista o movimento sozinho. */
+async function moverEtapa(id, para){
+  const c = S.contas.find(x => x.id === id);
+  if(!c || c.estado === para) return;
+  const antes = c.estado;
+  c.estado = para;                                   // optimista: o cartão salta já
+  const extra = {};
+  if(para === 'cliente' && !c.cliente_desde) extra.cliente_desde = hoje();
+  if(para === 'perdido' || para === 'desqualificado') extra.perdido_em = hoje();
+  const { error } = await sb.from('contas')
+    .update({ estado: para, actualizado_em: new Date().toISOString(), ...extra }).eq('id', id);
+  if(error){ c.estado = antes; aviso(error.message); return router(); }
+  aviso(`${c.nome} → ${ESTADOS[para]}`, 'ok');
+  router();
+}
+
+function cartaoConta(c, arrastavel){
+  const t = TEMPS[c.temperatura] || TEMPS.cold;
+  return `<div class="crd" data-c="${c.id}" ${arrastavel?'draggable="true"':''}>
+    <div class="t1">${esc(c.nome)}</div>
+    <div class="t2">${esc(c.proximo_passo||'—')}${c.proxima_data?' · '+dt(c.proxima_data):''}</div>
+    <div style="margin-top:6px;display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+      <span class="tag" style="color:${t.c};background:${t.f}">${t.t}</span>
+      ${c.tier!=null?`<span class="tag" style="color:#4361FF;background:#E8EDFF">T${c.tier}</span>`:''}
+      ${c.no_shows?`<span class="tag" style="color:#DC2626;background:#FEE2E2">${c.no_shows} no-show</span>`:''}
+      ${c.atrasada?`<span class="warn">${c.dias_sem_contacto}d</span>`:''}
+    </div></div>`;
+}
+
 async function vPipeline(){
   await carregarContas();
+  const { data:fc } = await sb.from('v_funil_comercial').select('*').order('mes');
   let cs = S.contas;
   if(filtro.temp) cs = cs.filter(c => c.temperatura === filtro.temp);
   if(filtro.dono) cs = cs.filter(c => c.dono === filtro.dono);
   if(filtro.seg)  cs = cs.filter(c => c.segmento === filtro.seg);
+  if(filtro.fase) cs = cs.filter(c => DONO_ETAPA[c.estado] === filtro.fase);
 
   const atrasadas = S.contas.filter(c => c.atrasada);
   const sempasso  = S.contas.filter(c => c.sem_proximo_passo);
   const segs = [...new Set(S.contas.map(c=>c.segmento).filter(Boolean))];
-
-  // série mensal de entradas
-  const porMes = {};
-  S.contas.forEach(c => { const m = (c.criado_em||'').slice(0,7); if(m) porMes[m]=(porMes[m]||0)+1; });
-  const mesesOrd = Object.keys(porMes).sort().slice(-6);
+  const F = (fc||[]).find(x => x.mes === S.mes) || {};
+  /* acumulado dos últimos 6 meses: com pouca amostra a taxa do mês não diz nada */
+  const ult = (fc||[]).slice(-6);
+  const som = k => ult.reduce((a,x)=>a+Number(x[k]||0),0);
+  const T = { leads:som('leads'), qualificados:som('qualificados'), agendadas:som('agendadas'),
+              realizadas:som('realizadas'), no_shows:som('no_shows'), fechados:som('fechados') };
+  const taxa = (a,b) => b ? pc(a/b) : '—';
 
   el('view').innerHTML = `
   <div class="hd"><div><h1>Pipeline</h1>
-    <div class="sb">${S.contas.length} conta${S.contas.length===1?'':'s'} no total · ${cs.length} ${cs.length===1?'visível':'visíveis'}</div></div>
+    <div class="sb">${S.contas.length} conta${S.contas.length===1?'':'s'} no total · ${cs.length} ${cs.length===1?'visível':'visíveis'}
+      · arrasta um cartão para mudar de etapa</div></div>
     <button class="btn" id="bNova">+ Nova conta</button></div>
 
   ${atrasadas.length?`<div class="al"><b>${atrasadas.length} ${atrasadas.length===1
@@ -901,33 +1029,58 @@ async function vPipeline(){
   ${!atrasadas.length && !sempasso.length && S.contas.length
     ?'<div class="al ok">Cadência em dia. Nada atrasado.</div>':''}
 
+  <div class="kpis" style="margin-bottom:12px">
+    ${K('Taxa de qualificação', taxa(T.qualificados,T.leads), T.leads+' leads entraram')}
+    ${K('Taxa de agendamento', taxa(T.agendadas,T.qualificados), T.agendadas+' reuniões marcadas')}
+    ${K('Show rate', taxa(T.realizadas,T.agendadas), T.no_shows+' no-shows',
+        T.agendadas?(T.realizadas/T.agendadas>=.7?'up':'dn'):'fl')}
+    ${K('Win rate', taxa(T.fechados,T.realizadas), 'reunião feita → fechado',
+        T.realizadas?(T.fechados/T.realizadas>=.3?'up':'dn'):'fl')}
+    ${K('Taxa de conversão', taxa(T.fechados,T.leads), 'lead → fechado')}
+    ${K('Fechados', T.fechados, 'nos últimos 6 meses')}
+  </div>
+
   <div class="chips">
-    <button class="chip ${!filtro.temp&&!filtro.dono&&!filtro.seg?'on':''}" data-lim>Tudo</button>
+    <button class="chip ${!filtro.temp&&!filtro.dono&&!filtro.seg&&!filtro.fase?'on':''}" data-lim>Tudo</button>
+    <button class="chip ${filtro.fase==='sdr'?'on':''}" data-f="sdr">SDR</button>
+    <button class="chip ${filtro.fase==='closer'?'on':''}" data-f="closer">Closer</button>
     ${Object.entries(TEMPS).filter(([k])=>!['cliente','perdido'].includes(k)).map(([k,v])=>
       `<button class="chip ${filtro.temp===k?'on':''}" data-t="${k}">${v.t}</button>`).join('')}
     ${S.equipa.map(p=>`<button class="chip ${filtro.dono===p.id?'on':''}" data-o="${p.id}">${esc(p.nome)}</button>`).join('')}
     ${segs.map(s=>`<button class="chip ${filtro.seg===s?'on':''}" data-s="${esc(s)}">${esc(s)}</button>`).join('')}
   </div>
 
-  <div class="kan">${FUNIL.map(e=>{
+  <div class="faixas">
+    <span style="grid-column:span 4">SDR · qualificar</span>
+    <span style="grid-column:span 5">Closer · fechar</span>
+  </div>
+  <div class="kan k9">${FUNIL.map(e=>{
     const n = cs.filter(c=>c.estado===e);
-    return `<div class="col"><h4><span>${ESTADOS[e]}</span><span>${n.length}</span></h4>
-      ${n.map(c=>{ const t=TEMPS[c.temperatura]||TEMPS.cold; return `
-        <button class="crd" data-c="${c.id}">
-          <div class="t1">${esc(c.nome)}</div>
-          <div class="t2">${esc(c.proximo_passo||'—')}${c.proxima_data?' · '+dt(c.proxima_data):''}</div>
-          <div style="margin-top:6px"><span class="tag" style="color:${t.c};background:${t.f}">${t.t}</span>
-          ${c.atrasada?`<span class="warn" style="margin-left:6px">${c.dias_sem_contacto}d</span>`:''}</div>
-        </button>`;}).join('')}
+    return `<div class="col" data-e="${e}">
+      <h4><span style="color:${COR_ETAPA[e]}">${ESTADOS[e]}</span><span>${n.length}</span></h4>
+      <div class="zona">${n.map(c=>cartaoConta(c,true)).join('')}</div>
     </div>`;}).join('')}</div>
 
-  <div class="card" style="margin-top:14px"><h2>Entradas por mês</h2>
-    ${mesesOrd.length?`<div class="fnl">${mesesOrd.map(m=>{
-      const topo = Math.max(...mesesOrd.map(x=>porMes[x]));
-      return `<div class="l"><span class="nm">${nomeMes(m+'-01')}</span>
-        <span class="tr"><i style="width:${porMes[m]/topo*100}%"></i></span>
-        <span class="v">${porMes[m]}</span></div>`;}).join('')}</div>`
-      :'<div class="empty">Sem dados.</div>'}
+  <div class="sec" style="margin-top:16px">Saídas</div>
+  <div class="kan k3">${SAIDAS.map(e=>{
+    const n = cs.filter(c=>c.estado===e);
+    return `<div class="col" data-e="${e}">
+      <h4><span style="color:${COR_ETAPA[e]}">${ESTADOS[e]}</span><span>${n.length}</span></h4>
+      <div class="zona">${n.map(c=>cartaoConta(c,true)).join('')}</div>
+    </div>`;}).join('')}</div>
+
+  <div class="card" style="margin-top:14px"><h2>Funil acumulado · últimos 6 meses</h2>
+    ${T.leads?`<div class="fnl">${[
+      ['Leads',T.leads],['Qualificados',T.qualificados],['Reuniões agendadas',T.agendadas],
+      ['Reuniões feitas',T.realizadas],['Fechados',T.fechados]].map(([nm,n],i,a)=>{
+      const ant = i ? a[i-1][1] : 0;
+      return `<div class="l"><span class="nm">${nm}</span>
+        <span class="tr"><i style="width:${T.leads?n/T.leads*100:0}%"></i></span>
+        <span class="v">${n}${i&&ant?` <span class="mini">${pc(n/ant)}</span>`:''}</span></div>`;}).join('')}
+      </div>
+      <div class="al am" style="margin-top:10px">Os no-shows (${T.no_shows}) não aparecem nesta escada:
+        a reunião foi marcada e não aconteceu, por isso contam para o show rate e não para o funil.</div>`
+      :'<div class="empty">Ainda não há leads registados.</div>'}
   </div>
 
   ${atrasadas.length?`<div class="card"><h2>Lista vermelha</h2>
@@ -935,55 +1088,172 @@ async function vPipeline(){
 
   el('bNova').onclick = novaConta;
   ligarLinhas();
-  el('view').querySelector('[data-lim]').onclick = () => { filtro={temp:'',dono:'',seg:''}; router(); };
+  ligarArrasto();
+  el('view').querySelector('[data-lim]').onclick = () => { filtro={temp:'',dono:'',seg:'',fase:''}; router(); };
+  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{ filtro.fase = filtro.fase===b.dataset.f?'':b.dataset.f; router(); });
   document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ filtro.temp = filtro.temp===b.dataset.t?'':b.dataset.t; router(); });
   document.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{ filtro.dono = filtro.dono===b.dataset.o?'':b.dataset.o; router(); });
   document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{ filtro.seg = filtro.seg===b.dataset.s?'':b.dataset.s; router(); });
+}
+
+/* ── arrastar entre etapas ──
+   Rato: HTML5 drag. Telemóvel: toque longo e arrasta — o drag nativo não
+   funciona em touch, por isso seguimos o dedo à mão. */
+function ligarArrasto(){
+  let levado = null;
+
+  /* Que coluna está debaixo do dedo. Se calhar mesmo na fresta entre duas,
+     fica a mais perto — um dedo não acerta ao pixel. */
+  const colunaEm = (x,y) => {
+    const directa = document.elementFromPoint(x,y)?.closest('.col[data-e]');
+    if(directa) return directa;
+    let melhor = null, dist = Infinity;
+    document.querySelectorAll('.col[data-e]').forEach(c => {
+      const r = c.getBoundingClientRect();
+      if(y < r.top - 70 || y > r.bottom + 70) return;
+      const d = x < r.left ? r.left - x : x > r.right ? x - r.right : 0;
+      if(d < dist){ dist = d; melhor = c; }
+    });
+    return dist <= 90 ? melhor : null;
+  };
+
+  document.querySelectorAll('.crd[draggable]').forEach(cd => {
+    cd.ondragstart = e => { levado = cd.dataset.c; arrastando = true; cd.classList.add('a-levar');
+      e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', levado); };
+    cd.ondragend = () => { cd.classList.remove('a-levar'); levado = null;
+      setTimeout(()=>{ arrastando = false; }, 60);
+      document.querySelectorAll('.col.alvo').forEach(x=>x.classList.remove('alvo')); };
+
+    /* toque: só começa a arrastar depois de 220 ms parado, senão rouba o scroll */
+    let temp = null, fant = null, origem = null;
+    cd.addEventListener('touchstart', e => {
+      const t = e.touches[0];
+      temp = setTimeout(() => {
+        levado = cd.dataset.c; origem = cd; arrastando = true;
+        cd.classList.add('a-levar');
+        fant = cd.cloneNode(true); fant.className = 'crd fantasma';
+        fant.style.width = cd.offsetWidth + 'px';
+        document.body.appendChild(fant);
+        mover(t.clientX, t.clientY);
+        if(navigator.vibrate) navigator.vibrate(12);
+      }, 220);
+    }, { passive:true });
+
+    /* Num telemóvel só cabem duas ou três colunas no ecrã. Sem isto,
+       a coluna de destino fica fora de vista e não há como lá chegar. */
+    const quadroDe = n => n.closest('.kan');
+    const mover = (x,y) => {
+      if(!fant) return;
+      fant.style.left = (x - fant.offsetWidth/2) + 'px';
+      fant.style.top  = (y - 26) + 'px';
+      const kan = quadroDe(cd);
+      if(kan){
+        const L = kan.getBoundingClientRect();
+        const margem = 54;
+        if(x < L.left + margem)  kan.scrollLeft -= 14;
+        if(x > L.right - margem) kan.scrollLeft += 14;
+      }
+      document.querySelectorAll('.col').forEach(c=>c.classList.remove('alvo'));
+      const sob = colunaEm(x,y);
+      if(sob) sob.classList.add('alvo');
+    };
+
+    let ultimo = null, repete = null;
+    cd.addEventListener('touchmove', e => {
+      if(!fant){ clearTimeout(temp); return; }
+      e.preventDefault();
+      const t = e.touches[0]; ultimo = [t.clientX, t.clientY];
+      mover(t.clientX, t.clientY);
+      /* o dedo pode ficar parado na beira: continua a deslizar o quadro */
+      clearInterval(repete);
+      repete = setInterval(() => { if(fant && ultimo) mover(...ultimo); else clearInterval(repete); }, 60);
+    }, { passive:false });
+
+    const largar = e => {
+      clearTimeout(temp); clearInterval(repete); ultimo = null;
+      if(!fant) return;
+      const t = e.changedTouches[0];
+      const col = colunaEm(t.clientX, t.clientY);
+      fant.remove(); fant = null; origem?.classList.remove('a-levar');
+      document.querySelectorAll('.col').forEach(c=>c.classList.remove('alvo'));
+      const id = levado; levado = null;
+      setTimeout(()=>{ arrastando = false; }, 60);
+      if(col && id) moverEtapa(id, col.dataset.e);
+    };
+    cd.addEventListener('touchend', largar);
+    cd.addEventListener('touchcancel', largar);
+  });
+
+  document.querySelectorAll('.col[data-e]').forEach(col => {
+    col.ondragover  = e => { e.preventDefault(); col.classList.add('alvo'); };
+    col.ondragleave = () => col.classList.remove('alvo');
+    col.ondrop = e => { e.preventDefault(); col.classList.remove('alvo');
+      const id = e.dataTransfer.getData('text/plain') || levado;
+      if(id) moverEtapa(id, col.dataset.e); };
+  });
 }
 
 /* ══════════════════════════════════════════════════════
    4 · CONTA
    ══════════════════════════════════════════════════════ */
 async function vConta(id){
-  const [{ data:c }, { data:ints }, { data:negs }, { data:cts }] = await Promise.all([
+  const [{ data:c }, { data:ints }, { data:negs }, { data:cts }, { data:movs }] = await Promise.all([
     sb.from('v_contas').select('*').eq('id',id).maybeSingle(),
     sb.from('interacoes').select('*').eq('conta_id',id).order('quando',{ascending:false}),
-    sb.from('negocios').select('*').eq('conta_id',id).order('criado_em'),
+    sb.from('v_negocios').select('*').eq('conta_id',id).order('criado_em'),
     sb.from('contactos').select('*').eq('conta_id',id).order('nome'),
+    sb.from('movimentos').select('*').eq('conta_id',id).order('quando'),
   ]);
   if(!c){ el('view').innerHTML = '<div class="al">Conta não encontrada.</div>'; return; }
   const t = TEMPS[c.temperatura] || TEMPS.cold;
   const lin = id2 => S.linhas.find(l=>l.id===id2)?.nome || '—';
+  const ltvC = (negs||[]).filter(n=>n.ganho).reduce((a,n)=>a+Number(n.fee_total||0),0);
 
   el('view').innerHTML = `
   <div class="hd"><div>
     <h1>${esc(c.nome)}</h1>
-    <div class="sb">${ESTADOS[c.estado]} · ${esc(c.segmento||'—')} · ${esc(c.origem||'—')}
-      · dono ${esc(c.dono_nome||'—')}</div></div>
+    <div class="sb">${esc(c.segmento||'—')} · ${esc(c.origem||'—')}
+      · SDR ${esc(c.sdr_nome||'—')} · closer ${esc(c.closer_nome||'—')}</div></div>
     <div class="rt"><span class="tag" style="color:${t.c};background:${t.f}">${t.t}</span>
     <button class="btn" id="bReg">Registar contacto</button></div></div>
 
+  <div class="card" style="margin-bottom:12px"><h2>Etapa</h2>
+    <div class="chips">${[...FUNIL,...SAIDAS].map(e=>
+      `<button class="chip ${c.estado===e?'on':''}" data-mv="${e}"
+        style="${c.estado===e?`background:${COR_ETAPA[e]};border-color:${COR_ETAPA[e]};color:#fff`:''}"
+        >${ESTADOS[e]}</button>`).join('')}</div>
+    <div class="mini" style="margin-top:8px;color:var(--muted)">
+      Também se arrasta o cartão no Pipeline. Cada passagem fica registada.</div>
+  </div>
+
   <div class="kpis" style="margin-bottom:14px">
+    <div class="kpi"><div class="n">Facturação do cliente</div>
+      <div class="v">${c.faturamento_mensal?MT(c.faturamento_mensal):'—'}</div>
+      <div class="d ${c.tier===0?'dn':'fl'}">${c.tier!=null?TIERS[c.tier]:'sem tier'}</div></div>
+    <div class="kpi"><div class="n">Tecto dos 15%</div>
+      <div class="v">${c.faturamento_mensal?MT(c.faturamento_mensal*0.15):'—'}</div>
+      <div class="d fl">o máximo que ele aguenta por mês</div></div>
     <div class="kpi"><div class="n">Sem contacto</div><div class="v">${c.dias_sem_contacto}d</div>
       <div class="d ${c.atrasada?'dn':'fl'}">cadência ${c.cadencia_dias||'—'}d</div></div>
+    <div class="kpi"><div class="n">Reuniões</div><div class="v">${c.reunioes_agendadas||0}</div>
+      <div class="d ${c.no_shows?'dn':'fl'}">${c.no_shows||0} no-show${c.no_shows===1?'':'s'}</div></div>
     <div class="kpi"><div class="n">Toques</div><div class="v">${c.total_interacoes}</div>
       <div class="d fl">${c.atendimentos} atenderam</div></div>
-    <div class="kpi"><div class="n">Próximo passo</div>
-      <div class="v" style="font-size:16px;line-height:1.35">${esc(c.proximo_passo||'—')}</div>
-      <div class="d ${c.sem_proximo_passo?'dn':'fl'}">${c.proxima_data?dt(c.proxima_data):'sem data'}</div></div>
-    <div class="kpi"><div class="n">LTV (fee)</div>
-      <div class="v">${MT((negs||[]).reduce((a,n)=>a+Number(n.tcv_fee||0),0))}</div>
-      <div class="d fl">CAC ${c.custo_aquisicao?MT(c.custo_aquisicao):'—'}</div></div>
+    <div class="kpi"><div class="n">LTV (fee)</div><div class="v">${MT(ltvC)}</div>
+      <div class="d fl">CAC ${c.custo_aquisicao?MT(c.custo_aquisicao):'—'}${
+        c.custo_aquisicao&&ltvC?` · ${(ltvC/c.custo_aquisicao).toFixed(1)}×`:''}</div></div>
   </div>
 
   <div class="g2">
     <div class="card"><h2>Negócios <button class="btn sm g" id="bNeg">+ negócio</button></h2>
       ${(negs||[]).length?`<div class="scr"><table><thead><tr>
-        <th>Negócio</th><th>Linha</th><th class="n">Fee/mês</th><th class="n">Meses</th>
-        <th class="n">TCV fee</th><th>Pago</th></tr></thead><tbody>
-        ${negs.map(n=>`<tr><td><b>${esc(n.nome)}</b></td><td>${esc(lin(n.linha_receita_id))}</td>
+        <th>Negócio</th><th class="n">Entrada</th><th class="n">Fee/mês</th><th class="n">Meses</th>
+        <th class="n">Receita V3</th><th>Pago</th></tr></thead><tbody>
+        ${negs.map(n=>`<tr><td><b>${esc(n.nome)}</b><br>
+            <span class="mini">${esc(lin(n.linha_receita_id))}</span></td>
+          <td class="n">${n.valor_entrada?MT(n.valor_entrada):'—'}</td>
           <td class="n">${MT(n.valor_fee)}</td><td class="n">${n.meses}</td>
-          <td class="n">${MT(n.tcv_fee)}</td>
+          <td class="n"><b>${MT(n.fee_total)}</b></td>
           <td>${n.data_pagamento?`<span style="color:var(--green);font-weight:700">${dt(n.data_pagamento)}</span>`
             :`<button class="btn sm" data-pag="${n.id}">registar</button>`}</td></tr>`).join('')}
       </tbody></table></div>`:'<div class="empty">Sem negócios.</div>'}
@@ -996,10 +1266,32 @@ async function vConta(id){
         ${x.telefone?`<a class="btn sm g" href="tel:${esc(x.telefone)}">ligar</a>`:''}
       </div>`).join(''):'<div class="empty">Sem contactos.</div>'}
       <div class="sp"></div>
+      <div class="g2">
+        <div class="f"><label>SDR</label><select id="cSdr2"><option value="">—</option>
+          ${S.equipa.map(p=>`<option value="${p.id}" ${c.sdr===p.id?'selected':''}>${esc(p.nome)}</option>`).join('')}
+        </select></div>
+        <div class="f"><label>Closer</label><select id="cCl2"><option value="">—</option>
+          ${S.equipa.map(p=>`<option value="${p.id}" ${c.closer===p.id?'selected':''}>${esc(p.nome)}</option>`).join('')}
+        </select></div>
+      </div>
+      <div class="f"><label>Facturação mensal (MT)</label>
+        <input id="cFat" type="number" inputmode="numeric" value="${c.faturamento_mensal||''}"></div>
+      <div class="f"><label>Etiquetas</label>
+        <input id="cEti" value="${esc((c.etiquetas||[]).join(', '))}" placeholder="restauração, mulher"></div>
       <div class="f"><label>Notas da conta</label>
         <textarea id="cNotas" style="min-height:70px">${esc(c.notas||'')}</textarea></div>
-      <button class="btn g sm" id="bNotas">Guardar notas</button>
+      <button class="btn g sm" id="bNotas">Guardar ficha</button>
     </div>
+  </div>
+
+  <div class="card"><h2>Caminho no funil</h2>
+    ${(movs||[]).length?`<div class="tl">${movs.map(m=>`<div class="ev">
+      <div style="font-weight:700;font-size:13.5px;color:${COR_ETAPA[m.para]||'inherit'}">
+        ${m.de?`${ESTADOS[m.de]||m.de} → `:''}${ESTADOS[m.para]||m.para}</div>
+      <div class="mini">${new Date(m.quando).toLocaleString('pt-PT',
+        {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+        ${m.quem?' · '+esc(nomeDe(m.quem)):''}</div>
+    </div>`).join('')}</div>`:'<div class="empty">Sem movimentos registados.</div>'}
   </div>
 
   <div class="card"><h2>Histórico · ${(ints||[]).length} interacções</h2>
@@ -1014,8 +1306,14 @@ async function vConta(id){
   await carregarContas();
   el('bReg').onclick = () => registar(id);
   el('bNotas').onclick = async () => {
-    await sb.from('contas').update({ notas: el('cNotas').value }).eq('id', id);
-    aviso('Notas guardadas.','ok'); };
+    const { error } = await sb.from('contas').update({
+      notas: el('cNotas').value,
+      sdr: el('cSdr2').value || null, closer: el('cCl2').value || null,
+      faturamento_mensal: Number(el('cFat').value) || null,
+      etiquetas: etiquetasDe(el('cEti').value) }).eq('id', id);
+    if(error) return aviso(error.message);
+    aviso('Ficha guardada.','ok'); router(); };
+  document.querySelectorAll('[data-mv]').forEach(b => b.onclick = () => moverEtapa(id, b.dataset.mv));
   el('bNeg').onclick = () => novoNegocio(id);
   el('bCt').onclick  = () => novoContacto(id);
   document.querySelectorAll('[data-pag]').forEach(b => b.onclick = () => registarPagamento(b.dataset.pag, c));
@@ -1031,17 +1329,34 @@ function novoNegocio(conta_id){
         ${S.linhas.map(l=>`<option value="${l.id}">${esc(l.nome)}</option>`).join('')}</select></div>
       <div class="f"><label>Meses</label><input id="nM" type="number" value="3" min="1"></div>
     </div>
+    <div class="f"><label>Entrada · paga uma vez (MT)</label>
+      <input id="nE" type="number" inputmode="numeric" placeholder="45000"></div>
     <div class="g2">
       <div class="f"><label>Fee por mês (MT)</label><input id="nF" type="number" inputmode="numeric"></div>
-      <div class="f"><label>Verba de anúncios total (MT)</label><input id="nV" type="number" inputmode="numeric"></div>
+      <div class="f"><label>Verba de anúncios por mês (MT)</label><input id="nV" type="number" inputmode="numeric"></div>
     </div>
-    <div class="al am">O <b>fee</b> é dinheiro da V3. A <b>verba</b> é dinheiro do cliente para anúncios.
-      Nunca se somam como receita.</div>
+    <div id="nTot" class="al ok" style="display:none"></div>
+    <div class="al am">Os três números são os mesmos da folha Oferta do catálogo.
+      A <b>entrada</b> é o que se paga uma vez (os produtos de propriedade) — conta para a facturação
+      e para o LTV, nunca para o MRR. O <b>fee</b> é o recorrente: é só isto que faz MRR.
+      A <b>verba</b> é dinheiro do cliente para anúncios e nunca é receita da V3.</div>
     <button class="btn w" id="nG">Guardar</button>`);
+  const recalc = () => {
+    const e = Number(el('nE').value)||0, f = Number(el('nF').value)||0,
+          v = Number(el('nV').value)||0, m = Number(el('nM').value)||1;
+    const box = el('nTot');
+    if(!e && !f && !v){ box.style.display='none'; return; }
+    box.style.display = '';
+    box.innerHTML = `<b>${MT(e + (f+v)*m)} MT</b> é o total do contrato ·
+      ${MT(e + f*m)} MT de receita da V3 · ${MT(v*m)} MT de verba ·
+      ${MT(f+v)} MT por mês durante ${m} ${m===1?'mês':'meses'}`;
+  };
+  ['nE','nF','nV','nM'].forEach(k => el(k).oninput = recalc);
   el('nG').onclick = async () => {
     const nome = el('nN').value.trim(); if(!nome) return aviso('Falta o nome.');
     const { error } = await sb.from('negocios').insert({ conta_id, nome,
       linha_receita_id: el('nL').value||null, meses:Number(el('nM').value)||1,
+      valor_entrada:Number(el('nE').value)||0,
       valor_fee:Number(el('nF').value)||0, valor_verba:Number(el('nV').value)||0, dono:S.eu.id });
     if(error) return aviso(error.message);
     fechar(); router();
@@ -1340,7 +1655,8 @@ const ritmoMes = () => { const h=new Date(); const dias=new Date(h.getFullYear()
 async function vMetricas(aba){
   const v = VALVULAS[aba] ? aba : valvulaPadrao();
   const [{data:aqs},{data:sus},{data:vms},{data:rec},{data:nps},{data:ltv},
-         {data:alertas},{data:ml},{data:orc},{data:fun},{data:mts}] = await Promise.all([
+         {data:alertas},{data:ml},{data:orc},{data:fun},{data:mts},{data:fc},{data:uni}]
+    = await Promise.all([
     sb.from('v_aquisicao').select('*').order('mes'),
     sb.from('v_sucesso').select('*').order('mes'),
     sb.from('v_vendas_mes').select('*').order('mes'),
@@ -1352,7 +1668,10 @@ async function vMetricas(aba){
     sb.from('orcamento_midia').select('*').eq('mes', S.mes),
     sb.from('v_funil').select('*'),
     sb.from('metas').select('*').eq('periodo', S.mes).eq('horizonte','mes'),
+    sb.from('v_funil_comercial').select('*').order('mes'),
+    sb.from('v_unidade').select('*').maybeSingle(),
   ]);
+  const { data:sinais } = await sb.from('v_sinais').select('*');
   await carregarContas();
   S.metas = Object.fromEntries((mts||[]).map(m=>[m.metrica, Number(m.alvo)]));
 
@@ -1361,7 +1680,7 @@ async function vMetricas(aba){
   const V = (vms||[]).find(x=>x.mes===S.mes) || {};
   const R = (rec||[]).find(x=>x.mes===S.mes) || (rec||[]).slice(-1)[0] || {};
   const L = ltv || {};
-  const al = alertas || [];
+  const al = [...(alertas||[]), ...(sinais||[])];
 
   const tabs = Object.entries(VALVULAS).map(([k,o])=>
     `<a class="tb ${k===v?'on':''}" href="#metricas/${k}">${o.t}</a>`).join('')
@@ -1373,9 +1692,9 @@ async function vMetricas(aba){
   <div class="tabs">${tabs}</div>
   ${blocoAlertas(al.filter(a => v==='geral' ? true : a.area===(v==='aquisicao'?'aquisicao':v)), true)}
   ${ v==='aquisicao' ? painelAquisicao(A, aqs, ml, orc, L)
-   : v==='vendas'    ? painelVendas(V, vms, fun)
-   : v==='sucesso'   ? painelSucesso(U, sus, rec, R, nps, L)
-   : painelGeral(A, V, U, R, L, nps) }`;
+   : v==='vendas'    ? painelVendas(V, vms, fun, fc)
+   : v==='sucesso'   ? painelSucesso(U, sus, rec, R, nps, L, uni||{})
+   : painelGeral(A, V, U, R, L, nps, uni||{}, fc) }`;
 
   ligarBotoesMetricas();
 }
@@ -1386,7 +1705,7 @@ function blocoAlertas(al, compacto){
   const mau = al.filter(a=>a.nivel!=='verde');
   if(!mau.length) return `<div class="al ok">Nada fora do sítio nesta válvula.</div>`;
   return `<div class="card" style="margin-bottom:12px"><h2>A olhar para ti</h2>
-    ${mau.map(a=>`<div class="row">
+    ${mau.map(a=>`<div class="row solta">
       <span class="dot" style="background:var(--${a.nivel==='vermelho'?'red':'amber'})"></span>
       <span class="in"><span class="t1">${esc(a.titulo)}</span>
         <span class="t2">${esc(a.detalhe)}</span></span></div>`).join('')}
@@ -1472,50 +1791,93 @@ function painelAquisicao(A, serie, ml, orc, L){
 }
 
 /* ══ VÁLVULA 2 · VENDAS ══ */
-function painelVendas(V, serie, fun){
-  const mapaF = Object.fromEntries((fun||[]).map(f=>[f.estado,f.contas]));
-  const topo = Math.max(1, ...FUNIL.map(e=>mapaF[e]||0));
-  const vivas = S.contas.filter(c=>!['cliente','perdido'].includes(c.estado));
+function painelVendas(V, serie, fun, fc){
+  const vivas = S.contas.filter(c=>!['cliente','perdido','desqualificado'].includes(c.estado));
+  const ult = (fc||[]).slice(-6);
+  const som = k => ult.reduce((a,x)=>a+Number(x[k]||0),0);
+  const T = { leads:som('leads'), qualificados:som('qualificados'), desq:som('desqualificados'),
+              agendadas:som('agendadas'), realizadas:som('realizadas'), no_shows:som('no_shows'),
+              propostas:som('propostas'), fechados:som('fechados'), nao:som('nao_fechados') };
+  const taxa = (a,b) => b ? pc(a/b) : '—';
+  const escada = [['Leads',T.leads],['Contactados',som('contactados')],['Qualificados',T.qualificados],
+    ['Reuniões agendadas',T.agendadas],['Reuniões feitas',T.realizadas],
+    ['Propostas',T.propostas],['Fechados',T.fechados]];
   return `
   <div class="kpis">
     ${K('Facturação', MT(V.facturado||0)+' MT', 'recebido este mês')}
     ${K('Vendas pagas', V.vendas||0, 'contrato pago, não assinado')}
-    ${K('Propostas', V.propostas||0, 'apresentadas este mês')}
-    ${K('Visitas feitas', V.visitas_feitas||0, (V.visitas_marcadas||0)+' marcadas')}
-    ${K('Contactos efectivos', V.contactos_efectivos||0, (V.interaccoes||0)+' tentativas')}
-    ${K('Taxa de atendimento', V.interaccoes?pc(V.contactos_efectivos/V.interaccoes):'—','falou com alguém')}
+    ${K('Win rate', taxa(T.fechados,T.realizadas), 'reunião feita → fechado',
+        T.realizadas?(T.fechados/T.realizadas>=.3?'up':'dn'):'fl')}
+    ${K('Taxa de conversão', taxa(T.fechados,T.leads), 'lead → fechado')}
+    ${K('Show rate', taxa(T.realizadas,T.agendadas), T.no_shows+' no-shows em '+T.agendadas+' reuniões',
+        T.agendadas?(T.realizadas/T.agendadas>=.7?'up':'dn'):'fl')}
+    ${K('Taxa de qualificação', taxa(T.qualificados,T.leads), T.desq+' desqualificados')}
+    ${K('Taxa de agendamento', taxa(T.agendadas,T.qualificados),'qualificado → reunião marcada')}
+    ${K('Taxa de atendimento', V.interaccoes?pc(V.contactos_efectivos/V.interaccoes):'—',
+        (V.contactos_efectivos||0)+' de '+(V.interaccoes||0)+' tentativas')}
     ${K('Pipeline vivo', vivas.length, S.contas.filter(c=>c.atrasada).length+' atrasadas',
         S.contas.filter(c=>c.atrasada).length?'dn':'up')}
-    ${K('Conversão do funil', mapaF.alvo?pc((mapaF.cliente||0)/(mapaF.alvo||1)):'—','alvo → cliente')}
+  </div>
+  <div class="mini" style="margin:8px 0 0;color:var(--muted)">
+    As taxas são do acumulado dos últimos 6 meses — num mês só, com esta amostra, não dizem nada.</div>
+
+  <div class="card" style="margin-top:12px"><h2>O funil · últimos 6 meses</h2>
+    ${T.leads?`<div class="fnl">${escada.map(([nm,n],i,a)=>{
+      const ant = i ? a[i-1][1] : 0;
+      return `<div class="l"><span class="nm">${nm}</span>
+        <span class="tr"><i style="width:${n/T.leads*100}%"></i></span>
+        <span class="v">${n}${i&&ant?` <span class="mini">${pc(n/ant)}</span>`:''}</span></div>`;}).join('')}
+      </div>
+      <div class="row solta" style="margin-top:10px">
+        <span class="dot" style="background:var(--red)"></span>
+        <span class="in"><span class="t1">${T.no_shows} no-show${T.no_shows===1?'':'s'}</span>
+        <span class="t2">Reuniões marcadas que não aconteceram. Não entram na escada —
+          se entrassem, estariam a ser contadas duas vezes.</span></span></div>`
+    :'<div class="empty">Ainda não há leads registados.</div>'}
   </div>
 
-  <div class="card" style="margin-top:12px"><h2>O funil</h2>
-    <div class="fnl">${FUNIL.map((e,i)=>{
-      const n = mapaF[e]||0, ant = i?mapaF[FUNIL[i-1]]||0:0;
-      return `<div class="l"><span class="nm">${ESTADOS[e]}</span>
-        <span class="tr"><i style="width:${n/topo*100}%"></i></span>
-        <span class="v">${n}${i&&ant?` <span class="mini">${pc(n/ant)}</span>`:''}</span></div>`;}).join('')}
-    </div></div>
-
   <div class="card"><h2>Mês a mês</h2>
+    <div class="scr"><table><thead><tr><th>Mês</th><th class="n">Leads</th>
+      <th class="n">Qualif.</th><th class="n">Agendadas</th><th class="n">Feitas</th>
+      <th class="n">No-show</th><th class="n">Fechados</th><th class="n">Win rate</th>
+      <th class="n">Conversão</th></tr></thead><tbody>
+      ${(fc||[]).slice(-12).reverse().map(x=>`<tr>
+        <td><b>${nomeMes(x.mes)}</b></td><td class="n">${x.leads}</td>
+        <td class="n">${x.qualificados}</td><td class="n">${x.agendadas}</td>
+        <td class="n">${x.realizadas}</td>
+        <td class="n" style="color:${x.no_shows?'var(--red)':'inherit'}">${x.no_shows}</td>
+        <td class="n"><b>${x.fechados}</b></td>
+        <td class="n">${x.win_rate!=null?pc(x.win_rate):'—'}</td>
+        <td class="n">${x.taxa_conversao!=null?pc(x.taxa_conversao):'—'}</td></tr>`).join('')
+        || '<tr><td colspan="9" class="empty">Ainda não há nada registado.</td></tr>'}
+    </tbody></table></div>
+  </div>
+
+  <div class="card"><h2>Receita mês a mês</h2>
     <div class="scr"><table><thead><tr><th>Mês</th><th class="n">Contas novas</th>
-      <th class="n">Contactos</th><th class="n">Visitas</th><th class="n">Propostas</th>
+      <th class="n">Contactos</th><th class="n">Propostas</th>
       <th class="n">Vendas</th><th class="n">Facturado</th></tr></thead><tbody>
       ${(serie||[]).filter(x=>x.interaccoes||x.vendas||x.contas_novas).slice(-12).reverse().map(x=>`<tr>
         <td><b>${nomeMes(x.mes)}</b></td><td class="n">${x.contas_novas}</td>
-        <td class="n">${x.contactos_efectivos}</td><td class="n">${x.visitas_feitas}</td>
+        <td class="n">${x.contactos_efectivos}</td>
         <td class="n">${x.propostas}</td><td class="n">${x.vendas}</td>
         <td class="n"><b>${MT(x.facturado)}</b></td></tr>`).join('')
-        || '<tr><td colspan="7" class="empty">Ainda não há nada registado.</td></tr>'}
+        || '<tr><td colspan="6" class="empty">Ainda não há nada registado.</td></tr>'}
     </tbody></table></div>
   </div>`;
 }
 
 /* ══ VÁLVULA 3 · SUCESSO DO CLIENTE ══ */
-function painelSucesso(U, serie, rec, R, nps, L){
+function painelSucesso(U, serie, rec, R, nps, L, uni){
   return `
   <div class="kpis">
     ${K('MRR', MT(R.mrr||0)+' MT','receita recorrente')}
+    ${K('ARPU', uni?.arpu?MT(uni.arpu)+' MT':'—','receita média por cliente/mês')}
+    ${K('LTV / CAC', uni?.ltv_cac??'—', uni?.ltv_cac>=3?'saudável':'abaixo de 3',
+        uni?.ltv_cac!=null?(uni.ltv_cac>=3?'up':'dn'):'fl')}
+    ${K('Must-have score', uni?.must_have_score!=null?pc(uni.must_have_score):'—',
+        uni?.mh_respostas?`${uni.mh_muito} de ${uni.mh_respostas} muito desapontados`:'por perguntar',
+        uni?.must_have_score!=null?(uni.must_have_score>=.4?'up':'dn'):'fl')}
     ${K('NRR', R.nrr!=null?pc(R.nrr):'—', R.nrr>=1?'a crescer na base':'a encolher',
         R.nrr!=null?(R.nrr>=1?'up':'dn'):'fl')}
     ${K('GRR', R.grr!=null?pc(R.grr):'—','retenção bruta', R.grr!=null?(R.grr>=.85?'up':'dn'):'fl')}
@@ -1558,10 +1920,31 @@ function painelSucesso(U, serie, rec, R, nps, L){
 }
 
 /* ══ VISÃO GERAL ══ */
-function painelGeral(A, V, U, R, L, nps){
-  const cac = Number(A.cac||0), ltvv = Number(L.ltv_fee||0);
+function painelGeral(A, V, U, R, L, nps, uni, fc){
+  const cac = Number(uni.cac || A.cac || 0), ltvv = Number(uni.ltv || L.ltv_fee || 0);
+  const ult = (fc||[]).slice(-6);
+  const som = k => ult.reduce((a,x)=>a+Number(x[k]||0),0);
+  const lr = som('leads'), rr = som('realizadas'), fe = som('fechados');
   return `
   ${cartaoMetas()}
+
+  <div class="sec">Economia de unidade · o que decide se isto escala</div>
+  <div class="kpis">
+    ${K('ARPU', uni.arpu?MT(uni.arpu)+' MT':'—','receita média por cliente/mês')}
+    ${K('LTV', ltvv?MT(ltvv)+' MT':'—',(uni.meses_medios||'—')+' meses médios')}
+    ${K('CAC', cac?MT(cac)+' MT':'—','custo de trazer um cliente')}
+    ${K('LTV / CAC', uni.ltv_cac??((cac&&ltvv)?(ltvv/cac).toFixed(1):'—'),
+        (cac&&ltvv)?(ltvv/cac>=3?'saudável · acima de 3':'abaixo de 3 — não escala'):'falta um dos dois',
+        (cac&&ltvv)?(ltvv/cac>=3?'up':'dn'):'fl')}
+    ${K('Must-have score', uni.must_have_score!=null?pc(uni.must_have_score):'—',
+        uni.mh_respostas?`${uni.mh_muito} de ${uni.mh_respostas} ficariam muito desapontados`
+                        :'ainda ninguém respondeu',
+        uni.must_have_score!=null?(uni.must_have_score>=.4?'up':'dn'):'fl')}
+    ${K('Win rate', rr?pc(fe/rr):'—','reunião feita → fechado')}
+    ${K('Taxa de conversão', lr?pc(fe/lr):'—','lead → fechado')}
+    ${K('Churn', R.taxa_churn!=null?pc(R.taxa_churn):'—','clientes que saíram',
+        R.taxa_churn?'dn':'up')}
+  </div>
 
   <div class="sec">Aquisição · gerar procura <a class="mini" href="#metricas/aquisicao">abrir →</a></div>
   <div class="kpis">
@@ -1584,12 +1967,20 @@ function painelGeral(A, V, U, R, L, nps){
   <div class="sec">Sucesso · manter e expandir <a class="mini" href="#metricas/sucesso">abrir →</a></div>
   <div class="kpis">
     ${K('MRR', MT(R.mrr||0)+' MT','receita recorrente')}
+    ${K('ARPU', uni?.arpu?MT(uni.arpu)+' MT':'—','receita média por cliente/mês')}
+    ${K('LTV / CAC', uni?.ltv_cac??'—', uni?.ltv_cac>=3?'saudável':'abaixo de 3',
+        uni?.ltv_cac!=null?(uni.ltv_cac>=3?'up':'dn'):'fl')}
+    ${K('Must-have score', uni?.must_have_score!=null?pc(uni.must_have_score):'—',
+        uni?.mh_respostas?`${uni.mh_muito} de ${uni.mh_respostas} muito desapontados`:'por perguntar',
+        uni?.must_have_score!=null?(uni.must_have_score>=.4?'up':'dn'):'fl')}
     ${K('NRR', R.nrr!=null?pc(R.nrr):'—', R.nrr>=1?'a crescer':'a encolher', R.nrr!=null?(R.nrr>=1?'up':'dn'):'fl')}
     ${K('NPS', U.nps!=null?U.nps:(nps?.nps!=null?nps.nps:'—'),'este mês')}
-    ${K('LTV / CAC', (cac&&ltvv)?(ltvv/cac).toFixed(1):'—',
-        (cac&&ltvv)?(ltvv/cac>=3?'saudável':'abaixo de 3'):'falta um dos dois',
-        (cac&&ltvv)?(ltvv/cac>=3?'up':'dn'):'fl')}
-  </div>`;
+    ${K('GRR', R.grr!=null?pc(R.grr):'—','retenção bruta', R.grr!=null?(R.grr>=.85?'up':'dn'):'fl')}
+  </div>
+
+  <div class="sec">A base <a class="mini" href="#base">abrir →</a></div>
+  <div class="al am">O corte da base por RFM e por coorte — quem é VIP, quem está a fugir,
+    que tipo de cliente tem melhor LTV sobre CAC — vive no ecrã <b>Base</b>.</div>`;
 }
 
 /* ── metas do mês: a régua contra a qual tudo é medido ── */
@@ -1763,7 +2154,194 @@ function folhaDepoimento(){
 }
 
 /* ══════════════════════════════════════════════════════
-   8 · CLIENTES
+   8 · BASE — quem é quem na carteira
+   ══════════════════════════════════════════════════════ */
+const GRUPOS = {
+  'VIP':          { c:'#059669', f:'#D1FAE5', o:0, q:'Comprou há pouco, compra muitas vezes, gasta mais.' },
+  'Grande valor': { c:'#7C3AED', f:'#EDE7FF', o:1, q:'Gasta muito. Não compra assim tão frequentemente.' },
+  'Fiel':         { c:'#4361FF', f:'#E8EDFF', o:2, q:'Volta sempre, mesmo que gaste pouco de cada vez.' },
+  'Novo':         { c:'#16B8CE', f:'#DEF7FB', o:3, q:'Entrou agora. Ainda não há histórico.' },
+  'Regular':      { c:'#6B6880', f:'#EEEEF4', o:4, q:'No meio da tabela em tudo.' },
+  'Em risco':     { c:'#EA580C', f:'#FFEDD5', o:5, q:'Já valeu. Há muito que não compra.' },
+  'Hibernado':    { c:'#B26A00', f:'#FEF3C7', o:6, q:'Sumiu. Pouco valor e há muito tempo.' },
+  'Perdido':      { c:'#9A99B5', f:'#F1F1F6', o:7, q:'Já saiu da base.' },
+};
+let dimBase = 'Segmento';
+
+async function vBase(){
+  const [{ data:rfm }, { data:coo }, { data:uni }] = await Promise.all([
+    sb.from('v_rfm').select('*').order('pontos_rfm',{ascending:false}),
+    sb.from('v_coorte').select('*'),
+    sb.from('v_unidade').select('*').maybeSingle(),
+  ]);
+  const R = rfm || [], C = coo || [], U = uni || {};
+  const dims = [...new Set(C.map(x=>x.dimensao))];
+  if(!dims.includes(dimBase)) dimBase = dims[0] || 'Segmento';
+  const linhas = C.filter(x=>x.dimensao===dimBase).sort((a,b)=>(b.clientes-a.clientes));
+
+  const porGrupo = {};
+  R.forEach(x => { (porGrupo[x.grupo] = porGrupo[x.grupo] || []).push(x); });
+  const ordem = Object.keys(porGrupo).sort((a,b)=>(GRUPOS[a]?.o??9)-(GRUPOS[b]?.o??9));
+  const vip   = porGrupo['VIP'] || [];
+  const risco = [...(porGrupo['Em risco']||[]), ...(porGrupo['Hibernado']||[])];
+
+  el('view').innerHTML = `
+  <div class="hd"><div><h1>Base</h1>
+    <div class="sb">${R.length} cliente${R.length===1?'':'s'} na carteira ·
+      recência, frequência, valor e coortes</div></div>
+    <button class="btn" id="bMh">+ Must-have</button></div>
+
+  ${!R.length ? `<div class="card"><div class="empty">
+    Ainda não há clientes com pagamento registado.<br>
+    Este ecrã enche-se sozinho a partir do momento em que um negócio for marcado como pago.</div></div>`
+  : `
+  <div class="kpis" style="margin-bottom:14px">
+    ${K('Clientes', R.length, (porGrupo['Perdido']||[]).length+' já saíram')}
+    ${K('VIP', vip.length, vip.length?'os que sustentam a casa':'ainda nenhum', vip.length?'up':'fl')}
+    ${K('Em risco', risco.length, 'recência baixa com valor', risco.length?'dn':'up')}
+    ${K('ARPU', U.arpu?MT(U.arpu)+' MT':'—','por cliente, por mês')}
+    ${K('LTV / CAC', U.ltv_cac??'—', U.ltv_cac>=3?'saudável':'abaixo de 3',
+        U.ltv_cac!=null?(U.ltv_cac>=3?'up':'dn'):'fl')}
+    ${K('Must-have', U.must_have_score!=null?pc(U.must_have_score):'—',
+        U.mh_respostas?`${U.mh_muito} de ${U.mh_respostas}`:'por perguntar',
+        U.must_have_score!=null?(U.must_have_score>=.4?'up':'dn'):'fl')}
+  </div>
+
+  ${laudo(R, porGrupo, linhas, U)}
+
+  <div class="card"><h2>RFM · os grupos</h2>
+    <div class="al am">R = há quanto tempo comprou · F = quantas vezes comprou ·
+      M = quanto deixou cá. Cada um vale de 1 a 5, por comparação com os outros clientes.</div>
+    ${ordem.map(g=>{
+      const G = GRUPOS[g] || { c:'#6B6880', f:'#EEEEF4', q:'' };
+      const l = porGrupo[g];
+      return `<div style="margin-top:12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span class="tag" style="color:${G.c};background:${G.f};font-size:12px">${g} · ${l.length}</span>
+          <span class="mini" style="color:var(--muted)">${G.q}</span></div>
+        <div class="scr"><table><thead><tr><th>Cliente</th><th class="n">R</th><th class="n">F</th>
+          <th class="n">M</th><th class="n">Última compra</th><th class="n">Compras</th>
+          <th class="n">Deixou cá</th><th class="n">CAC</th></tr></thead><tbody>
+          ${l.map(x=>`<tr><td><a href="#conta/${x.conta_id}"><b>${esc(x.nome)}</b></a></td>
+            <td class="n">${x.r}</td><td class="n">${x.f}</td><td class="n">${x.m}</td>
+            <td class="n">${x.ultima_compra?dt(x.ultima_compra):'—'}${
+              x.dias_desde_compra!=null?` <span class="mini">${x.dias_desde_compra}d</span>`:''}</td>
+            <td class="n">${x.compras}</td><td class="n"><b>${MT(x.monetario)}</b></td>
+            <td class="n">${x.custo_aquisicao?MT(x.custo_aquisicao):'—'}</td></tr>`).join('')}
+        </tbody></table></div></div>`;}).join('')}
+  </div>
+
+  <div class="card"><h2>Coortes · cortar a base</h2>
+    <div class="chips">${dims.map(d=>
+      `<button class="chip ${d===dimBase?'on':''}" data-d="${esc(d)}">${esc(d)}</button>`).join('')}</div>
+    <div class="al am" style="margin-top:10px">Se um corte tem CAC alto mas LTV ainda mais alto,
+      vale a pena pagar mais para o trazer. Se tem CAC baixo e churn alto, está a encher a base
+      de gente que não fica. É esta a decisão que este quadro serve.</div>
+    <div class="scr"><table><thead><tr><th>${esc(dimBase)}</th><th class="n">Clientes</th>
+      <th class="n">CAC médio</th><th class="n">LTV médio</th><th class="n">LTV / CAC</th>
+      <th class="n">Meses médios</th><th class="n">Churn</th></tr></thead><tbody>
+      ${linhas.length?linhas.map(x=>`<tr><td><b>${esc(x.valor)}</b></td>
+        <td class="n">${x.clientes}</td>
+        <td class="n">${x.cac?MT(x.cac):'—'}</td><td class="n">${x.ltv?MT(x.ltv):'—'}</td>
+        <td class="n" style="font-weight:700;color:${x.ltv_cac==null?'inherit'
+          :x.ltv_cac>=3?'var(--green)':'var(--red)'}">${x.ltv_cac??'—'}</td>
+        <td class="n">${x.meses_medios??'—'}</td>
+        <td class="n" style="color:${x.churn?'var(--red)':'inherit'}">${pc(x.churn)}</td></tr>`).join('')
+        :'<tr><td colspan="7" class="empty">Sem dados neste corte.</td></tr>'}
+    </tbody></table></div>
+    ${dimBase==='Etiqueta'?'':`<div class="mini" style="margin-top:8px;color:var(--muted)">
+      Para cortar por características que não estão aqui — mulheres, bairro, tipo de dono —
+      põe uma etiqueta na ficha da conta e ela aparece no separador Etiqueta.</div>`}
+  </div>`}`;
+
+  document.querySelectorAll('[data-d]').forEach(b =>
+    b.onclick = () => { dimBase = b.dataset.d; router(); });
+  el('bMh').onclick = novoMustHave;
+}
+
+/* O laudo: a conclusão que se tira do quadro, escrita em português. */
+function laudo(R, porGrupo, coortes, U){
+  const d = [];
+  const vip = porGrupo['VIP'] || [];
+  const risco = [...(porGrupo['Em risco']||[]), ...(porGrupo['Hibernado']||[])];
+  const perdidos = porGrupo['Perdido'] || [];
+  const vivos = R.filter(x=>!x.perdido_em);
+
+  if(vip.length){
+    const parte = vip.reduce((a,x)=>a+Number(x.monetario||0),0);
+    const todo  = R.reduce((a,x)=>a+Number(x.monetario||0),0);
+    d.push({ n:'ok', t:`${vip.length} cliente${vip.length===1?'':'s'} VIP ${vip.length===1?'vale':'valem'} ${pc(todo?parte/todo:0)} da receita da base`,
+      s:`${vip.map(x=>x.nome).join(', ')}. Se ${vip.length===1?'este sair':'um destes sair'}, sente-se no caixa. Vale a pena um toque fora da agenda.` });
+  }
+  if(risco.length){
+    const valor = risco.reduce((a,x)=>a+Number(x.monetario||0),0);
+    d.push({ n:'vermelho', t:`${risco.length} cliente${risco.length===1?'':'s'} em risco — ${MT(valor)} MT já ${risco.length===1?'deixados':'deixados'} cá`,
+      s:`${risco.map(x=>`${x.nome} (${x.dias_desde_compra??'?'}d sem comprar)`).join(', ')}. ${risco.length===1?'Já comprou e parou':'Já compraram e pararam'}. É mais barato recuperar do que ir buscar novos.` });
+  }
+  if(perdidos.length && R.length){
+    d.push({ n:'amarelo', t:`${pc(perdidos.length/R.length)} da base já saiu`,
+      s:`${perdidos.length} de ${R.length} clientes. A pergunta não é quantos saíram, é porquê — o motivo de perda tem de estar na ficha.` });
+  }
+  const comp = coortes.filter(x=>x.ltv_cac!=null);
+  if(comp.length >= 2){
+    const melhor = comp.reduce((a,b)=>Number(b.ltv_cac)>Number(a.ltv_cac)?b:a);
+    const pior   = comp.reduce((a,b)=>Number(b.ltv_cac)<Number(a.ltv_cac)?b:a);
+    if(melhor.valor !== pior.valor)
+      d.push({ n: Number(melhor.ltv_cac)>=3?'ok':'amarelo',
+        t:`"${melhor.valor}" devolve ${melhor.ltv_cac}× o que custa a trazer; "${pior.valor}" devolve ${pior.ltv_cac}×`,
+        s:`${melhor.valor}: CAC ${melhor.cac?MT(melhor.cac):'—'} MT, LTV ${melhor.ltv?MT(melhor.ltv):'—'} MT. `+
+          `${pior.valor}: CAC ${pior.cac?MT(pior.cac):'—'} MT, LTV ${pior.ltv?MT(pior.ltv):'—'} MT. `+
+          `Mandar mais verba para onde o retorno é maior é a decisão óbvia — desde que a amostra chegue.` });
+  }
+  const semCac = vivos.filter(x=>!x.custo_aquisicao).length;
+  if(semCac) d.push({ n:'amarelo', t:`${semCac} cliente${semCac===1?'':'s'} sem CAC registado`,
+    s:'Sem o custo de aquisição, o LTV sobre CAC do corte onde ele cai é um palpite. Põe o número na ficha.' });
+  if(U.must_have_score == null)
+    d.push({ n:'amarelo', t:'Must-have score por medir',
+      s:'Uma pergunta por cliente: "como te sentirias se deixasses de contar connosco?" Acima de 40% de "muito desapontado" é sinal de encaixe.' });
+  else if(U.must_have_score < 0.4)
+    d.push({ n:'vermelho', t:`Must-have score em ${pc(U.must_have_score)} — abaixo dos 40%`,
+      s:'A maioria dos clientes passava bem sem a V3. Antes de gastar mais em aquisição, o problema é a entrega.' });
+
+  if(R.length < 8) d.push({ n:'amarelo', t:'Amostra pequena',
+    s:`Com ${R.length} cliente${R.length===1?'':'s'}, os grupos de RFM são ordenações, não estatística. Lê isto como quem olha para nomes, não para percentagens.` });
+
+  if(!d.length) return '';
+  return `<div class="card"><h2>O laudo</h2>
+    ${d.map(x=>`<div class="row solta">
+      <span class="dot" style="background:var(--${x.n==='vermelho'?'red':x.n==='ok'?'green':'amber'})"></span>
+      <span class="in"><span class="t1">${esc(x.t)}</span><span class="t2">${esc(x.s)}</span></span>
+    </div>`).join('')}</div>`;
+}
+
+function novoMustHave(){
+  const cls = S.contas.filter(c => c.estado === 'cliente');
+  abrir(`<h3>Must-have score</h3>
+    <div class="al ok">Uma pergunta só, a cada cliente, uma vez por semestre:
+      <b>"Como te sentirias se deixasses de contar com a V3?"</b></div>
+    <div class="f"><label>Cliente</label><select id="mC">
+      ${cls.length?cls.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('')
+        :'<option value="">— ainda não há clientes —</option>'}</select></div>
+    <div class="f"><label>Resposta</label><select id="mR">
+      <option value="muito">Muito desapontado</option>
+      <option value="pouco">Pouco desapontado</option>
+      <option value="nada">Nada — passava bem sem</option></select></div>
+    <div class="f"><label>O que disse</label><textarea id="mN" style="min-height:62px"
+      placeholder="disse que era o único sítio onde..."></textarea></div>
+    <div class="al am">Acima de <b>40%</b> de "muito desapontado" é o limiar a partir do qual
+      vale a pena acelerar a aquisição. Abaixo disso, acelerar só faz o churn crescer mais depressa.</div>
+    <button class="btn w" id="mG">Guardar</button>`);
+  el('mG').onclick = async () => {
+    const conta_id = el('mC').value; if(!conta_id) return aviso('Escolhe um cliente.');
+    const { error } = await sb.from('must_have').insert({ conta_id, resposta: el('mR').value,
+      comentario: el('mN').value || null, recolhido_por: S.eu.id });
+    if(error) return aviso(error.message);
+    fechar(); router();
+  };
+}
+
+/* ══════════════════════════════════════════════════════
+   9 · CLIENTES
    ══════════════════════════════════════════════════════ */
 async function vClientes(){
   await carregarContas();
